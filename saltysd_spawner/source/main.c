@@ -23,7 +23,12 @@ void __libnx_initheap(void)
 
 void __appInit(void)
 {
-    
+    smInitialize();
+}
+
+void __appExit(void)
+{
+    smExit();
 }
 
 int main(int argc, char *argv[])
@@ -33,9 +38,13 @@ int main(int argc, char *argv[])
     write_log("SaltySD Spawner Start\n");
     ret = load_elf(saltysd_proc_elf, saltysd_proc_elf_size);
     if (ret)
-        write_log("ELF load failed with %x\n", ret);
+        write_log("Spawner: ELF load failed with %x\n", ret);
 
-    ipc_handoffs();
+    ret = ipc_handoffs();
+    if (ret)
+        write_log("Spawner: IPC handoffs returned %x\n", ret);
+
+    write_log("Spawner: Goodbye.\n");
 
     return 0;
 }

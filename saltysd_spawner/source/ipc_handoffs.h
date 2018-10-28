@@ -1,11 +1,13 @@
 #ifndef IPC_HANDOFFS_H
 #define IPC_HANDOFFS_H
 
+#include <switch.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void ipc_handoffs();
+Result ipc_handoffs();
 
 #ifdef __cplusplus
 }

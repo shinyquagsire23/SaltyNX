@@ -62,7 +62,7 @@ u32 pcaps[24] =
 Result load_elf(uint8_t* elf_data, u32 elf_size)
 {
     Result ret;
-    Handle proc, reslimit;
+    Handle proc;
     struct ProcInfo procInfo;
     
     Elf_parser elf(elf_data);
@@ -79,9 +79,9 @@ Result load_elf(uint8_t* elf_data, u32 elf_size)
         if (max > max_vaddr)
             max_vaddr = max;
     }
-
+    
     strcpy(procInfo.name, "SaltySD");
-    procInfo.category = 0; // sysmodule
+    procInfo.category = 1; // builtin
     procInfo.tid = 0x0100000000535344;
     procInfo.codeAddr = 0x800000000;
     procInfo.codePages = (max_vaddr - min_vaddr) / 0x1000;
@@ -92,28 +92,8 @@ Result load_elf(uint8_t* elf_data, u32 elf_size)
     procInfo.useSysMemBlocks = false;
     procInfo.poolPartition = 2;
     
-    procInfo.resLimitHandle = reslimit;
+    procInfo.resLimitHandle = 0;
     procInfo.personalHeapNumPages = 0;
-    
-    // Set up resource limits
-    ret = svcCreateResourceLimit(&reslimit);
-    if (ret) return ret;
-    
-    ret = svcSetResourceLimitLimitValue(reslimit, LimitableResource_Memory, 0x800000);
-    if (ret) return ret;
-
-    ret = svcSetResourceLimitLimitValue(reslimit, LimitableResource_Threads, 64);
-    if (ret) return ret;
-
-    ret = svcSetResourceLimitLimitValue(reslimit, LimitableResource_Events, 64);
-    if (ret) return ret;
-
-    ret = svcSetResourceLimitLimitValue(reslimit, LimitableResource_TransferMemories, 64);
-    if (ret) return ret;
-
-    ret = svcSetResourceLimitLimitValue(reslimit, LimitableResource_Sessions, 64);
-    if (ret) return ret;
-    
     
     // Create the process and map its memory for writing
     ret = svcCreateProcess(&proc, &procInfo, pcaps, 24);
