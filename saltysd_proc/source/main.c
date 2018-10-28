@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
             svcCloseHandle(session);
         }
 
-        svcSleepThread(0);
+        svcSleepThread(1000*1000);
     }
     
     svcCloseHandle(port);

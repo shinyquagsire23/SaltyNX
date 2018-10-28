@@ -5,6 +5,7 @@
 
 #include "useful.h"
 #include "ipc_handoffs.h"
+#include "loadelf.h"
 #include "saltysd_proc_elf.h"
 
 u32 __nx_applet_type = AppletType_None;
@@ -30,7 +31,9 @@ int main(int argc, char *argv[])
     Result ret;
 
     write_log("SaltySD Spawner Start\n");
-    load_elf(saltysd_proc_elf, saltysd_proc_elf_size);
+    ret = load_elf(saltysd_proc_elf, saltysd_proc_elf_size);
+    if (ret)
+        write_log("ELF load failed with %x\n", ret);
 
     ipc_handoffs();
 

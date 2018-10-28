@@ -152,7 +152,6 @@ Result load_elf(uint8_t* elf_data, u32 elf_size)
         }
 
         ret = svcSetProcessMemoryPermission(proc, procInfo.codeAddr + seg.segment_virtaddr, seg.segment_memsize + 0xFFF & ~0xFFF, perms);
-        if (ret) return ret;
     }
     
     ret = svcStartProcess(proc, 49, 3, 0x1000);
