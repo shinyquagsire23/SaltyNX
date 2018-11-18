@@ -7,7 +7,7 @@ $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/de
 endif
 
 TOPDIR ?= $(CURDIR)
-include $(DEVKITPRO)/libnx/switch_rules
+include $(TOPDIR)/rel_rules
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -29,7 +29,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #     - icon.jpg
 #     - <libnx folder>/default_icon.jpg
 #---------------------------------------------------------------------------------
-TARGET		:=	saltysd_proc
+TARGET		:=	saltysd_bootstrap
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
@@ -39,7 +39,9 @@ EXEFS_SRC	:=	exefs_src
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft
+
+ASFLAGS :=  $(ARCH)
 
 CFLAGS	:=	-g -Wall -O2 \
 			-ffast-math \
@@ -50,15 +52,13 @@ CFLAGS	+=	$(INCLUDE) -DSWITCH
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-
-LIBS	:= -lnx
+LDFLAGS	=	-T $(TOPDIR)/rel.ld -z text -z nodynamic-undefined-weak --build-id=sha1 -g -nostartfiles -nodefaultlibs --emit-relocs -s
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX)
+LIBDIRS	:= $(LIBNX)
 
 
 #---------------------------------------------------------------------------------
@@ -163,7 +163,6 @@ $(OUTPUT).elf	:	$(OFILES)
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
 %.bin.o	:	%.bin
-%.elf.o :   %.elf
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)

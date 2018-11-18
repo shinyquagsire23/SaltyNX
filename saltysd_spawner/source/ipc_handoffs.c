@@ -74,6 +74,8 @@ Result handle_cmd(int cmd)
 
         if (!ret)
             ipcSendHandleMove(&c, toget.handle);
+        else
+            write_log("Spawner: couldn't get handle, ret %x\n", ret);
     }
     else if (cmd == 2)
     {
@@ -99,6 +101,8 @@ Result handle_cmd(int cmd)
 
         if (!ret)
             ipcSendHandleMove(&c, toget);
+        else
+            write_log("Spawner: couldn't get handle, ret %x\n", ret);
     }
     else
     {
