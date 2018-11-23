@@ -4,11 +4,15 @@
 #include <stdio.h>
 #include <switch/kernel/ipc.h>
 #include "saltysd_bootstrap_elf.h"
+#include "saltysd_core_elf.h"
+
+#include "spawner_ipc.h"
 
 #include "useful.h"
 
 u32 __nx_applet_type = AppletType_None;
 
+void serviceThread(void* buf);
 static char g_heap[0x20000];
 bool should_terminate = false;
 
@@ -26,149 +30,6 @@ void __appInit(void)
     smInitialize();
 }
 
-Result get_handle(Handle port, Handle *retrieve, char* name)
-{
-    Result ret = 0;
-
-    // Send a command
-    IpcCommand c;
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        char name[12];
-        u32 reserved;
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 1;
-    strncpy(raw->name, name, 12);
-
-    write_log("SaltySD: sending IPC request for handle %s\n", name);
-    ret = ipcDispatch(port);
-
-    if (R_SUCCEEDED(ret)) {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-            u64 reserved[2];
-        } *resp = r.Raw;
-
-        ret = resp->result;
-        //write_log("SaltySD: Got reply %x\n", resp->result);
-        
-        if (!ret)
-        {
-            write_log("SaltySD: bind handle %x to %s\n", r.Handles[0], name);
-            smAddOverrideHandle(smEncodeName(name), r.Handles[0]);
-        }
-    }
-    else
-    {
-        //write_log("SaltySD: IPC dispatch failed, %x\n", ret);
-    }
-    
-    return ret;
-}
-
-void get_port(Handle port, Handle *retrieve, char* name)
-{
-    Result ret;
-
-    // Send a command
-    IpcCommand c;
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        char name[12];
-        u32 reserved;
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 3;
-    strncpy(raw->name, name, 12);
-
-    write_log("SaltySD: sending IPC request for port %s\n", name);
-    ret = ipcDispatch(port);
-
-    if (R_SUCCEEDED(ret)) {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-            u64 reserved[2];
-        } *resp = r.Raw;
-
-        ret = resp->result;
-        //write_log("SaltySD: Got reply %x\n", resp->result);
-        
-        if (!ret)
-        {
-            write_log("SaltySD: got handle %x for port %s\n", r.Handles[0], name);
-            *retrieve = r.Handles[0];
-        }
-        else
-        {
-            write_log("SaltySD: got return %x\n", ret);
-        }
-    }
-    else
-    {
-        write_log("SaltySD: IPC dispatch failed, %x\n", ret);
-    }
-}
-
-void terminate_spawner(Handle port)
-{
-    Result ret;
-
-    // Send a command
-    IpcCommand c;
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u64 reserved[2];
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 2;
-
-    write_log("SaltySD: terminating spawner\n");
-    ret = ipcDispatch(port);
-
-    if (R_SUCCEEDED(ret)) {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-            u64 reserved[2];
-        } *resp = r.Raw;
-
-        ret = resp->result;
-    }
-}
-
 void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
 {
     ThreadContext context;
@@ -182,7 +43,7 @@ void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
     memcpy(elf, saltysd_bootstrap_elf, saltysd_bootstrap_elf_size);
     
     uint64_t new_start;
-    load_elf(*debug, &new_start, elf, saltysd_bootstrap_elf_size);
+    load_elf_debug(*debug, &new_start, elf, saltysd_bootstrap_elf_size);
     free(elf);
 
     // Set new PC
@@ -217,33 +78,105 @@ void hijack_pid(u64 pid)
             
     hijack_bootstrap(&debug, pid, tids[0]);
     
+    serviceThread(NULL);
+    
     free(tids);
 }
 
-int main(int argc, char *argv[])
+Result svcQueryProcessMemory(MemoryInfo* meminfo_ptr, u32* pageinfo, Handle debug, u64 addr);
+
+Result handleServiceCmd(int cmd)
+{
+    Result ret = 0;
+
+    // Send reply
+    IpcCommand c;
+    ipcInitialize(&c);
+    ipcSendPid(&c);
+
+    if (cmd == 0) // ACK
+    {
+        ret = 0;
+        should_terminate = true;
+    }
+    else if (cmd == 1)
+    {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 command;
+            u64 heap;
+            u32 reserved[2];
+        } *resp = r.Raw;
+
+        Handle proc = r.Handles[0];
+        write_log("SaltySD: cmd 1 handler, proc handle %x, heap %llx\n", proc, resp->heap);
+        
+        u64 new_start;
+        ret = load_elf_proc(proc, r.Pid, resp->heap, &new_start, saltysd_core_elf, saltysd_core_elf_size);
+        
+        /*u64 addr = 0;
+        while (1)
+        {
+            MemoryInfo info;
+            u32 pageinfo;
+            Result ret = svcQueryProcessMemory(&info, &pageinfo, proc, addr);
+            
+            write_log("SaltySD: %016llx, size %llx\n", info.addr, info.size);
+
+            addr = info.addr + info.size;
+            
+            if (!addr || ret) break;
+        }*/
+        
+        svcCloseHandle(proc);
+        
+        // Ship off results
+        struct {
+            u64 magic;
+            u64 result;
+            u64 new_addr;
+            u64 reserved[1];
+        } *raw;
+
+        raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+        raw->magic = SFCO_MAGIC;
+        raw->result = 0;
+        raw->new_addr = new_start;
+
+        return 0;
+    }
+    else
+    {
+        ret = 0xEE01;
+    }
+    
+    struct {
+        u64 magic;
+        u64 result;
+        u64 reserved[2];
+    } *raw;
+
+    raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+    raw->magic = SFCO_MAGIC;
+    raw->result = ret;
+    
+    return ret;
+}
+
+Handle saltyport;
+u8 stack[0x8000];
+
+void serviceThread(void* buf)
 {
     Result ret;
-    Handle port, saltyport, pmdmnt, fsp;
-    
-    write_log("SaltySD says hello!\n");
-    
-    do
-    {
-        ret = svcConnectToNamedPort(&port, "Spawner");
-        svcSleepThread(1000*1000);
-    }
-    while (ret);
-    
-    // Begin asking for handles
-    get_handle(port, &fsp, "fsp-srv");
-    /*while(get_handle(port, &pmdmnt, "pm:info"))
-    {
-        svcSleepThread(1000*1000*10000);
-    }*/
-    get_port(port, &saltyport, "SaltySD");
-    terminate_spawner(port);
-    svcCloseHandle(port);
-    
+    write_log("SaltySD: accepting service calls\n");
+    should_terminate = false;
+
     while (1)
     {
         Handle session;
@@ -277,8 +210,7 @@ int main(int argc, char *argv[])
                     u64 reserved[2];
                 } *resp = r.Raw;
 
-                write_log("SaltySD: command %x\n", resp->command);
-                should_terminate = true;
+                handleServiceCmd(resp->command);
 
                 replySession = session;
                 svcSleepThread(1000*1000);
@@ -288,16 +220,42 @@ int main(int argc, char *argv[])
         }
 
         if (should_terminate) break;
+        
+        //write_log("SaltySD: ..\n", ret);
+        svcSleepThread(1000*1000*100);
+    }
+    
+    write_log("SaltySD: done accepting service calls\n");
+    
+    //svcCloseHandle(saltyport);
+    //svcExitThread();
+}
+
+int main(int argc, char *argv[])
+{
+    Result ret;
+    Handle port, fsp, thread;
+    
+    write_log("SaltySD says hello!\n");
+    
+    do
+    {
+        ret = svcConnectToNamedPort(&port, "Spawner");
         svcSleepThread(1000*1000);
     }
+    while (ret);
     
-    svcCloseHandle(saltyport);
-    
-    //TODO: maybe just be silent or something idk
-    for (int i = 0; i < 13; i++)
-    {
-        svcSleepThread(1000*1000*1000);
-    }
+    // Begin asking for handles
+    get_handle(port, &fsp, "fsp-srv");
+    get_port(port, &saltyport, "SaltySD");
+    terminate_spawner(port);
+    svcCloseHandle(port);
+
+    /*ret = svcCreateThread(&thread, serviceThread, NULL, &stack[0x8000],0x31, 3);
+    write_log("SaltySD: create thread %x\n", ret);
+    ret = svcStartThread(thread);
+    write_log("SaltySD: start thread %x\n", ret);*/
+    serviceThread(NULL);
     
     u64* pids = malloc(0x200 * sizeof(u64));
     u64 max = 0;
@@ -321,6 +279,7 @@ int main(int argc, char *argv[])
             hijack_pid(max);
         }
 
+        //write_log("SaltySD: .\n", ret);
         svcSleepThread(1000*1000);
     }
     free(pids);
