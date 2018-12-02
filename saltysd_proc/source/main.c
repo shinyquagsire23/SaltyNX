@@ -75,6 +75,15 @@ void hijack_pid(u64 pid)
     oldContext = context;
 
     write_log("SaltySD: new max %llx, %x %016llx\n", pid, threads, context.pc.x);
+    /*write_log("x0  %016llx x1  %016llx x2  %016llx x3  %016llx\n", context.cpu_gprs[0].x, context.cpu_gprs[1].x, context.cpu_gprs[2].x, context.cpu_gprs[3].x);
+    write_log("x4  %016llx x5  %016llx x6  %016llx x7  %016llx\n", context.cpu_gprs[4].x, context.cpu_gprs[5].x, context.cpu_gprs[6].x, context.cpu_gprs[7].x);
+    write_log("x8  %016llx x9  %016llx x10 %016llx x11 %016llx\n", context.cpu_gprs[8].x, context.cpu_gprs[9].x, context.cpu_gprs[10].x, context.cpu_gprs[11].x);
+    write_log("x12 %016llx x13 %016llx x14 %016llx x15 %016llx\n", context.cpu_gprs[12].x, context.cpu_gprs[13].x, context.cpu_gprs[14].x, context.cpu_gprs[15].x);
+    write_log("x16 %016llx x17 %016llx x18 %016llx x19 %016llx\n", context.cpu_gprs[16].x, context.cpu_gprs[17].x, context.cpu_gprs[18].x, context.cpu_gprs[19].x);
+    write_log("x20 %016llx x21 %016llx x22 %016llx x23 %016llx\n", context.cpu_gprs[20].x, context.cpu_gprs[21].x, context.cpu_gprs[22].x, context.cpu_gprs[23].x);
+    write_log("x24 %016llx x25 %016llx x26 %016llx x27 %016llx\n", context.cpu_gprs[24].x, context.cpu_gprs[25].x, context.cpu_gprs[26].x, context.cpu_gprs[27].x);
+    write_log("x28 %016llx\n", context.cpu_gprs[28].x);
+    write_log("sp %016llx lr %016llx pc %016llx\n", context.sp, context.lr, context.pc.x);*/
             
     hijack_bootstrap(&debug, pid, tids[0]);
     
@@ -94,12 +103,12 @@ Result handleServiceCmd(int cmd)
     ipcInitialize(&c);
     ipcSendPid(&c);
 
-    if (cmd == 0) // ACK
+    if (cmd == 0) // EndSession
     {
         ret = 0;
         should_terminate = true;
     }
-    else if (cmd == 1)
+    else if (cmd == 1) // LoadCore
     {
         IpcParsedCommand r;
         ipcParse(&r);
@@ -146,6 +155,71 @@ Result handleServiceCmd(int cmd)
         raw->magic = SFCO_MAGIC;
         raw->result = 0;
         raw->new_addr = new_start;
+
+        return 0;
+    }
+    else if (cmd == 2) // RestoreBootstrapCode
+    {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 command;
+            u32 reserved[4];
+        } *resp = r.Raw;
+
+        write_log("SaltySD: cmd 2 handler\n");
+        
+        Handle debug;
+        ret = svcDebugActiveProcess(&debug, r.Pid);
+        if (!ret)
+        {
+            ret = restore_elf_debug(debug);
+        }
+
+        svcCloseHandle(debug);
+    }
+    else if (cmd == 3) // Memcpy
+    {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 command;
+            u64 to;
+            u64 from;
+            u64 size;
+        } *resp = r.Raw;
+
+        write_log("SaltySD: cmd 3 handler, memcpy(%llx, %llx, %llx)\n", resp->to, resp->from, resp->size);
+        
+        Handle debug;
+        ret = svcDebugActiveProcess(&debug, r.Pid);
+        if (!ret)
+        {
+            u8* tmp = malloc(resp->size);
+
+            ret = svcReadDebugProcessMemory(tmp, debug, resp->from, resp->size);
+            ret = svcWriteDebugProcessMemory(debug, tmp, resp->to, resp->size);
+
+            free(tmp);
+            
+            ret = svcCloseHandle(debug);
+        }
+        
+        // Ship off results
+        struct {
+            u64 magic;
+            u64 result;
+            u64 reserved[2];
+        } *raw;
+
+        raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+        raw->magic = SFCO_MAGIC;
+        raw->result = 0;
 
         return 0;
     }

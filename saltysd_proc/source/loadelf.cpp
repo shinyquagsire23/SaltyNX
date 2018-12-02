@@ -8,6 +8,10 @@
 
 using namespace elf_parser;
 
+void *text_save;
+void *data_save;
+u64 text_addr, data_addr, text_fsize, data_fsize, text_msize, data_msize;
+
 u64 find_memory(Handle debug, u64 min, u64 size, u8 perm)
 {
     u64 addr = 0;
@@ -36,8 +40,12 @@ Result load_elf_debug(Handle debug, uint64_t* start, uint8_t* elf_data, u32 elf_
 
     segment_t text_seg = elf.get_segments()[0];
     segment_t data_seg = elf.get_segments()[1];
-    u64 text_addr = find_memory(debug, 0, text_seg.phdr->p_memsz, Perm_Rx);
-    u64 data_addr = find_memory(debug, text_addr, data_seg.phdr->p_memsz, Perm_Rw);
+    text_addr = find_memory(debug, 0, text_seg.phdr->p_memsz, Perm_Rx);
+    data_addr = find_memory(debug, text_addr, data_seg.phdr->p_memsz, Perm_Rw);
+    text_fsize = text_seg.phdr->p_filesz;
+    data_fsize = data_seg.phdr->p_filesz;
+    text_msize = text_seg.phdr->p_memsz;
+    data_msize = data_seg.phdr->p_memsz;
     write_log(".text to %llx, .data to %llx\n", text_addr, data_addr);
     
     elf.relocate_segment(0, text_addr);
@@ -45,9 +53,36 @@ Result load_elf_debug(Handle debug, uint64_t* start, uint8_t* elf_data, u32 elf_
     
     *start = text_addr;
     
-    //TODO: keep backups
-    ret = svcWriteDebugProcessMemory(debug, text_seg.data, text_addr, text_seg.phdr->p_filesz);
-    ret = svcWriteDebugProcessMemory(debug, data_seg.data, data_addr, data_seg.phdr->p_filesz);
+    text_save = malloc(text_msize);
+    data_save = malloc(data_msize);
+    
+    ret = svcReadDebugProcessMemory(text_save, debug, text_addr, text_msize);
+    ret = svcReadDebugProcessMemory(data_save, debug, data_addr, data_msize);
+
+    ret = svcWriteDebugProcessMemory(debug, text_seg.data, text_addr, text_fsize);
+    ret = svcWriteDebugProcessMemory(debug, data_seg.data, data_addr, data_fsize);
+    
+    return ret;
+}
+
+Result restore_elf_debug(Handle debug)
+{
+    Result ret;
+
+    ret = svcWriteDebugProcessMemory(debug, text_save, text_addr, text_msize);
+    ret = svcWriteDebugProcessMemory(debug, data_save, data_addr, data_msize);
+    
+    free(text_save);
+    free(data_save);
+    
+    text_addr = 0;
+    data_addr = 0;
+    text_save = NULL;
+    data_save = NULL;
+    text_fsize = 0;
+    data_fsize = 0;
+    text_msize = 0;
+    data_msize = 0;
     
     return ret;
 }

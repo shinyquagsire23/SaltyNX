@@ -59,6 +59,6 @@ __nx_exit:
     mov  sp, x8
 
     // jump back to loader
-    br   x1
+    br   x2
 
 .pool

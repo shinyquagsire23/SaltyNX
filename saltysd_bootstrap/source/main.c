@@ -252,10 +252,6 @@ int main(int argc, char *argv[])
     write_log("SaltySD Bootstrap: ELF loaded to %p\n", (void*)new_addr);
     __saltysd_exit_func = new_addr;
 
-    write_log("SaltySD Bootstrap: terminating\n");
-    ret = _smInit(saltysd);
-    if (ret) goto fail;
-
     svcCloseHandle(saltysd);
     svcCloseHandle(sm);
 
