@@ -197,21 +197,9 @@ void setupAppHeap(void)
 {
     u64 size = 0;
     void* addr = NULL;
-    u64 mem_available = 0, mem_used = 0;
-    Result rc=0;
+    Result rc = 0;
 
-    svcGetInfo(&mem_available, 6, CUR_PROCESS_HANDLE, 0);
-    svcGetInfo(&mem_used, 7, CUR_PROCESS_HANDLE, 0);
-    if (mem_available > mem_used+0x200000)
-        size = (mem_available - mem_used - 0x200000) & ~0x1FFFFF;
-    if (size==0)
-        size = 0x2000000*16;
-
-    //if (size > 0x6000000 && g_isAutomaticGameplayRecording) {
-        size -= 0x6000000;
-    //}
-
-    rc = svcSetHeapSize(&addr, size);
+    rc = svcSetHeapSize(&addr, 0x200000);
 
     if (rc || addr == NULL)
     {
@@ -219,7 +207,7 @@ void setupAppHeap(void)
     }
 
     g_heapAddr = addr;
-    g_heapSize = size;
+    g_heapSize = 0x200000;
 }
 
 int main(int argc, char *argv[])

@@ -6,6 +6,8 @@
 
 #include "useful.h"
 
+#include "bm.h"
+
 u32 __nx_applet_type = AppletType_None;
 
 static char g_heap[0x20000];
@@ -54,32 +56,6 @@ u64 getCodeStart()
     return addr;
 }
 
-u64 findCode(u8* code, size_t size)
-{
-    u64 addr = getCodeStart();
-
-    while (1)
-    {
-        if (!memcmp((void*)addr, code, size)) return addr;
-
-        MemoryInfo info;
-        u32 pageinfo;
-        Result ret = svcQueryMemory(&info, &pageinfo, addr);
-        
-        if (info.perm != Perm_Rx)
-        {
-            addr = info.addr + info.size;
-        }
-        else
-        {
-            addr += sizeof(u32);
-        }
-        if (ret) break;
-    }
-
-    return 0;
-}
-
 u64 getCodeSize()
 {
     u64 addr = 0;
@@ -96,6 +72,44 @@ u64 getCodeSize()
 
         addr = info.addr + info.size;
 
+        if (!addr || ret) break;
+    }
+
+    return 0;
+}
+
+u64 findCode(u8* code, size_t size)
+{
+    Result ret = 0;
+    u64 addr = getCodeStart();
+    u64 addr_size = getCodeSize();
+
+    while (1)
+    {
+        void* out = boyer_moore_search((void*)addr, addr_size, code, size);
+        if (out) return out;
+        
+        addr += addr_size;
+
+        while (1)
+        {
+            MemoryInfo info;
+            u32 pageinfo;
+            ret = svcQueryMemory(&info, &pageinfo, addr);
+            
+            if (info.perm != Perm_Rx)
+            {
+                addr = info.addr + info.size;
+            }
+            else
+            {
+                addr = info.addr;
+                addr_size = info.size;
+                break;
+            }
+            if (!addr || ret) break;
+        }
+        
         if (!addr || ret) break;
     }
 
@@ -401,6 +415,11 @@ Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
     Result ret = svcGetInfo(out, id0, handle, id1);
     
     //write_log("SaltySD Core: svcGetInfo intercept %p (%llx) %llx %x %llx ret %x\n", out, *out, id0, handle, id1, ret);
+    
+    if (id0 == 6 && id1 == 0 && handle == 0xffff8001)
+    {
+        *out -= 0x200000;
+    }
     
     return ret;
 }
