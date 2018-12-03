@@ -451,6 +451,8 @@ Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
     return ret;
 }
 
+extern elf_trampoline(void* context, Handle thread, void* func);
+
 int main(int argc, char *argv[])
 {
     Result ret;
@@ -517,6 +519,10 @@ int main(int argc, char *argv[])
     // Load plugin ELFs
     void** tp = (void**)((u8*)armGetTls() + 0x1F8);
     *tp = malloc(0x1000);
+    
+    void** entries = NULL;
+    size_t num_elfs = 0;
+    
     DIR *d;
     struct dirent *dir;
     d = opendir("sdmc:/SaltySD/plugins/");
@@ -532,12 +538,21 @@ int main(int argc, char *argv[])
                 saltySDLoadELF(saltysd, find_next_elf_heap(), &elf_addr, &elf_size, dir->d_name);
                 
                 //TODO: execute ELFs
+                entries = realloc(entries, ++num_elfs * sizeof(void*));
+                entries[num_elfs-1] = (void*)elf_addr;
                 
                 elf_area_size += elf_size;
             }
         }
         closedir(d);
     }
+    
+    for (int i = 0; i < num_elfs; i++)
+    {
+       elf_trampoline(orig_ctx, orig_main_thread, entries[i]);
+    }
+    if (num_elfs)
+        free(entries);
     
     free(*tp);
 
