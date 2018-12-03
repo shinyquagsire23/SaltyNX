@@ -164,7 +164,7 @@ Result ipc_handoffs()
     Handle port;
     Service fsp;
     
-    ret = svcManageNamedPort(&port, "Spawner", 100);
+    ret = svcManageNamedPort(&port, "Spawner", 1);
     //write_log("Spawner: svcManageNamedPort returned %x, handle %x\n", ret, port);
     
     while (1)
@@ -219,11 +219,12 @@ Result ipc_handoffs()
     Service saltysd;
     do
     {
-        ret = smGetService(&saltysd, "SaltySD");
+        ret = svcConnectToNamedPort(&saltysd, "SaltySD");
         svcSleepThread(1000*1000);
     }
     while (ret);
     saltysd_test(saltysd.handle);
+    svcCloseHandle(saltysd.handle);
 
     return ret;
 }

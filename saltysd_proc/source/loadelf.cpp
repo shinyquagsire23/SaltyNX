@@ -145,7 +145,7 @@ Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, 
             }
         }
 
-        ret = svcSetProcessMemoryPermission(proc, 0x800000000 + seg.phdr->p_vaddr, seg.phdr->p_memsz + 0xFFF & ~0xFFF, perms);
+        svcSetProcessMemoryPermission(proc, 0x800000000 + seg.phdr->p_vaddr, seg.phdr->p_memsz + 0xFFF & ~0xFFF, perms);
     }
     
     *start = 0x800000000;

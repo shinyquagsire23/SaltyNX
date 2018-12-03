@@ -166,6 +166,9 @@ Result saltySDTerm(Handle salt)
 
         ret = resp->result;
     }
+    
+    // Session terminated works too.
+    if (ret == 0xf601) return 0;
 
     return ret;
 }
@@ -299,103 +302,6 @@ Result saltySDMemcpy(Handle salt, u64 to, u64 from, u64 size)
     return ret;
 }
 
-Result _smInit(Handle sm)
-{
-    Result ret;
-    IpcCommand c;
-
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-
-    struct 
-    {
-        u64 magic;
-        u64 cmd_id;
-        u64 zero;
-        u64 reserved[2];
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 0;
-    raw->zero = 0;
-
-    ret = ipcDispatch(sm);
-
-    if (R_SUCCEEDED(ret)) 
-    {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp = r.Raw;
-
-        ret = resp->result;
-    }
-
-    return ret;
-}
-
-u64 _smEncodeName(const char* name)
-{
-    u64 name_encoded = 0;
-    size_t i;
-
-    for (i=0; i<8; i++)
-    {
-        if (name[i] == '\0')
-            break;
-
-        name_encoded |= ((u64) name[i]) << (8*i);
-    }
-
-    return name_encoded;
-}
-
-Result _smGetService(Handle* handle_out, Handle sm, const char* name)
-{
-    IpcCommand c;
-    ipcInitialize(&c);
-    
-    u64 name_encode = _smEncodeName(name);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u64 service_name;
-        u64 reserved[2];
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 1;
-    raw->service_name = name_encode;
-
-    Result rc = ipcDispatch(sm);
-
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp = r.Raw;
-
-        rc = resp->result;
-
-        if (R_SUCCEEDED(rc)) {
-            *handle_out = r.Handles[0];
-        }
-    }
-
-    return rc;
-}
-
 Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 {
     Result ret = svcSetHeapSize(out, size+0x200000);
@@ -427,22 +333,16 @@ Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
 int main(int argc, char *argv[])
 {
     Result ret;
-    Handle sm, saltysd;
+    Handle saltysd;
     
     write_log("SaltySD Core: waddup\n");
     
-    ret = svcConnectToNamedPort(&sm, "sm:");
-    if (ret) goto fail;
-
-    ret = _smGetService(&saltysd, sm, "SaltySD");
-    if (ret)
+    do
     {
-        ret = _smInit(sm);
-        if (ret) goto fail;
-        
-        ret = _smGetService(&saltysd, sm, "SaltySD");
-        if (ret) goto fail;
+        ret = svcConnectToNamedPort(&saltysd, "SaltySD");
+        svcSleepThread(1000*1000);
     }
+    while (ret);
 
     write_log("SaltySD Core: Got handle %x, restoring code...\n", saltysd);
     ret = saltySDRestore(saltysd);
@@ -489,7 +389,6 @@ int main(int argc, char *argv[])
     if (ret) goto fail;
 
     svcCloseHandle(saltysd);
-    svcCloseHandle(sm);
 
     __libnx_exit(0);
 

@@ -13,6 +13,8 @@
 u32 __nx_applet_type = AppletType_None;
 
 void serviceThread(void* buf);
+
+Handle saltyport;
 static char g_heap[0x20000];
 bool should_terminate = false;
 
@@ -27,7 +29,7 @@ void __libnx_initheap(void)
 
 void __appInit(void)
 {
-    smInitialize();
+    
 }
 
 void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
@@ -75,19 +77,8 @@ void hijack_pid(u64 pid)
     oldContext = context;
 
     write_log("SaltySD: new max %llx, %x %016llx\n", pid, threads, context.pc.x);
-    /*write_log("x0  %016llx x1  %016llx x2  %016llx x3  %016llx\n", context.cpu_gprs[0].x, context.cpu_gprs[1].x, context.cpu_gprs[2].x, context.cpu_gprs[3].x);
-    write_log("x4  %016llx x5  %016llx x6  %016llx x7  %016llx\n", context.cpu_gprs[4].x, context.cpu_gprs[5].x, context.cpu_gprs[6].x, context.cpu_gprs[7].x);
-    write_log("x8  %016llx x9  %016llx x10 %016llx x11 %016llx\n", context.cpu_gprs[8].x, context.cpu_gprs[9].x, context.cpu_gprs[10].x, context.cpu_gprs[11].x);
-    write_log("x12 %016llx x13 %016llx x14 %016llx x15 %016llx\n", context.cpu_gprs[12].x, context.cpu_gprs[13].x, context.cpu_gprs[14].x, context.cpu_gprs[15].x);
-    write_log("x16 %016llx x17 %016llx x18 %016llx x19 %016llx\n", context.cpu_gprs[16].x, context.cpu_gprs[17].x, context.cpu_gprs[18].x, context.cpu_gprs[19].x);
-    write_log("x20 %016llx x21 %016llx x22 %016llx x23 %016llx\n", context.cpu_gprs[20].x, context.cpu_gprs[21].x, context.cpu_gprs[22].x, context.cpu_gprs[23].x);
-    write_log("x24 %016llx x25 %016llx x26 %016llx x27 %016llx\n", context.cpu_gprs[24].x, context.cpu_gprs[25].x, context.cpu_gprs[26].x, context.cpu_gprs[27].x);
-    write_log("x28 %016llx\n", context.cpu_gprs[28].x);
-    write_log("sp %016llx lr %016llx pc %016llx\n", context.sp, context.lr, context.pc.x);*/
-            
+
     hijack_bootstrap(&debug, pid, tids[0]);
-    
-    serviceThread(NULL);
     
     free(tids);
 }
@@ -107,6 +98,7 @@ Result handleServiceCmd(int cmd)
     {
         ret = 0;
         should_terminate = true;
+        write_log("SaltySD: cmd 0, terminating\n");
     }
     else if (cmd == 1) // LoadCore
     {
@@ -125,21 +117,7 @@ Result handleServiceCmd(int cmd)
         
         u64 new_start;
         ret = load_elf_proc(proc, r.Pid, resp->heap, &new_start, saltysd_core_elf, saltysd_core_elf_size);
-        
-        /*u64 addr = 0;
-        while (1)
-        {
-            MemoryInfo info;
-            u32 pageinfo;
-            Result ret = svcQueryProcessMemory(&info, &pageinfo, proc, addr);
-            
-            write_log("SaltySD: %016llx, size %llx\n", info.addr, info.size);
 
-            addr = info.addr + info.size;
-            
-            if (!addr || ret) break;
-        }*/
-        
         svcCloseHandle(proc);
         
         // Ship off results
@@ -153,8 +131,10 @@ Result handleServiceCmd(int cmd)
         raw = ipcPrepareHeader(&c, sizeof(*raw));
 
         raw->magic = SFCO_MAGIC;
-        raw->result = 0;
+        raw->result = ret;
         raw->new_addr = new_start;
+        
+        write_log("SaltySD: new_addr to %llx, %x\n", new_start, ret);
 
         return 0;
     }
@@ -242,9 +222,6 @@ Result handleServiceCmd(int cmd)
     return ret;
 }
 
-Handle saltyport;
-u8 stack[0x8000];
-
 void serviceThread(void* buf)
 {
     Result ret;
@@ -285,6 +262,8 @@ void serviceThread(void* buf)
                 } *resp = r.Raw;
 
                 handleServiceCmd(resp->command);
+                
+                if (should_terminate) break;
 
                 replySession = session;
                 svcSleepThread(1000*1000);
@@ -295,14 +274,10 @@ void serviceThread(void* buf)
 
         if (should_terminate) break;
         
-        //write_log("SaltySD: ..\n", ret);
         svcSleepThread(1000*1000*100);
     }
     
     write_log("SaltySD: done accepting service calls\n");
-    
-    //svcCloseHandle(saltyport);
-    //svcExitThread();
 }
 
 int main(int argc, char *argv[])
@@ -321,16 +296,13 @@ int main(int argc, char *argv[])
     
     // Begin asking for handles
     get_handle(port, &fsp, "fsp-srv");
-    get_port(port, &saltyport, "SaltySD");
     terminate_spawner(port);
     svcCloseHandle(port);
 
-    /*ret = svcCreateThread(&thread, serviceThread, NULL, &stack[0x8000],0x31, 3);
-    write_log("SaltySD: create thread %x\n", ret);
-    ret = svcStartThread(thread);
-    write_log("SaltySD: start thread %x\n", ret);*/
-    serviceThread(NULL);
-    
+    // Start our port
+    // For some reason, we only have one session maximum (0 reslimit handle related?)    
+    ret = svcManageNamedPort(&saltyport, "SaltySD", 1);
+
     u64* pids = malloc(0x200 * sizeof(u64));
     u64 max = 0;
     while (1)
@@ -352,8 +324,13 @@ int main(int argc, char *argv[])
         {
             hijack_pid(max);
         }
+        
+        // If someone is waiting for us, handle them.
+        if (!svcWaitSynchronizationSingle(saltyport, 1000))
+        {
+            serviceThread(NULL);
+        }
 
-        //write_log("SaltySD: .\n", ret);
         svcSleepThread(1000*1000);
     }
     free(pids);
