@@ -87,13 +87,16 @@ Result restore_elf_debug(Handle debug)
     return ret;
 }
 
-Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, uint8_t* elf_data, u32 elf_size)
+Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, uint64_t* total_size, uint8_t* elf_data, u32 elf_size)
 {
     Result ret;
     Handle debug;
     
-    Elf_parser elf(elf_data);
+    *start = 0;
+    *total_size = 0;
     
+    Elf_parser elf(elf_data);
+
     // Figure out our number of pages
     u64 min_vaddr = -1, max_vaddr = 0;
     for (auto seg : elf.get_segments())
@@ -117,13 +120,23 @@ Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, 
         ret = svcWriteDebugProcessMemory(debug, seg.data, heap + seg.phdr->p_vaddr, seg.phdr->p_filesz);
         if (ret) break;
     }
-    
-    ret = svcCloseHandle(debug);
+
+    svcCloseHandle(debug);
     if (ret) return ret;
     
     // Unmap heap, map new code
-    ret = svcMapProcessCodeMemory(proc, 0x800000000, heap, (max_vaddr - min_vaddr));
+    
+    u64 load_addr;
+    write_log("SaltySD: Search for size %llx\n", (max_vaddr - min_vaddr));
+    do
+    {
+        load_addr = randomGet64() & 0xFFFFFF000ull;
+        ret = svcMapProcessCodeMemory(proc, load_addr, heap, (max_vaddr - min_vaddr));
+    }
+    while (ret == 0xDC01 || ret == 0xD401);
     if (ret) return ret;
+    
+    write_log("SaltySD: Found free address space at %llx, size %llx\n", load_addr, (max_vaddr - min_vaddr));
     
     // Adjust permissions and then return
     for (auto seg : elf.get_segments())
@@ -145,10 +158,11 @@ Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, 
             }
         }
 
-        svcSetProcessMemoryPermission(proc, 0x800000000 + seg.phdr->p_vaddr, seg.phdr->p_memsz + 0xFFF & ~0xFFF, perms);
+        svcSetProcessMemoryPermission(proc, load_addr + seg.phdr->p_vaddr, seg.phdr->p_memsz + 0xFFF & ~0xFFF, perms);
     }
     
-    *start = 0x800000000;
+    *start = load_addr;
+    *total_size = (max_vaddr - min_vaddr);
     
     return ret;
 }

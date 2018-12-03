@@ -44,6 +44,7 @@ Result get_handle(Handle port, Handle *retrieve, char* name)
         {
             write_log("SaltySD: bind handle %x to %s\n", r.Handles[0], name);
             smAddOverrideHandle(smEncodeName(name), r.Handles[0]);
+            *retrieve = r.Handles[0];
         }
     }
     else

@@ -23,11 +23,29 @@ void __libnx_initheap(void)
 
 void __appInit(void)
 {
+    Result ret;
     smInitialize();
+    
+    write_log("SaltySD Spawner: waiting for SD\n");
+    
+    // Wait for SD card to be online
+    for (int i = 0; i < 7; i++)
+    {
+        svcSleepThread(1*1000*1000*1000);
+    }
+    
+    write_log("SaltySD Spawner: getting SD\n");
+    
+    fsInitialize();
+    fsdevMountSdmc();
+    
+    write_log("SaltySD Spawner: got SD card\n");
 }
 
 void __appExit(void)
 {
+    fsdevUnmountAll();
+    fsExit();
     smExit();
 }
 

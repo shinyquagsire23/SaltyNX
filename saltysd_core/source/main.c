@@ -2,6 +2,9 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <dirent.h>
+#include <sys/iosupport.h>
+#include <sys/reent.h>
 #include <switch/kernel/ipc.h>
 
 #include "useful.h"
@@ -18,6 +21,16 @@ extern void __nx_exit_clear(void* ctx, Handle thread, void* addr);
 Handle orig_main_thread;
 void* orig_ctx;
 
+Handle sdcard;
+size_t elf_area_size = 0x80000;
+u64 code_start = 0;
+
+struct _reent reent;
+
+static struct _reent* __get_reent(void) {
+    return _impure_ptr;
+}
+
 void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
 {
     extern char* fake_heap_start;
@@ -25,6 +38,8 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
 
     fake_heap_start = &g_heap[0];
     fake_heap_end   = &g_heap[sizeof g_heap];
+    
+    __syscalls.getreent = __get_reent;
     
     orig_ctx = ctx;
     orig_main_thread = main_thread;
@@ -36,6 +51,8 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
 
 u64 getCodeStart()
 {
+    if (code_start) return code_start;
+
     u64 addr = 0;
     while (1)
     {
@@ -53,6 +70,8 @@ u64 getCodeStart()
 
         if (!addr || ret) break;
     }
+    
+    code_start = addr;
     return addr;
 }
 
@@ -118,6 +137,8 @@ u64 findCode(u8* code, size_t size)
 
 void __attribute__((weak)) NORETURN __libnx_exit(int rc)
 {
+    fsdevUnmountAll();
+
     // Call destructors.
     void __libc_fini_array(void);
     __libc_fini_array();
@@ -216,7 +237,7 @@ Result saltySDRestore(Handle salt)
     return ret;
 }
 
-Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr)
+Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr, u64* elf_size, char* name)
 {
     Result ret;
     IpcCommand c;
@@ -230,6 +251,7 @@ Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr)
         u64 magic;
         u64 cmd_id;
         u64 heap;
+        char name[32];
         u64 reserved[2];
     } *raw;
 
@@ -238,6 +260,7 @@ Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr)
     raw->magic = SFCI_MAGIC;
     raw->cmd_id = 1;
     raw->heap = heap;
+    strncpy(raw->name, name, 31);
 
     ret = ipcDispatch(salt);
 
@@ -250,10 +273,12 @@ Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr)
             u64 magic;
             u64 result;
             u64 elf_addr;
+            u64 elf_size;
         } *resp = r.Raw;
 
         ret = resp->result;
         *elf_addr = resp->elf_addr;
+        *elf_size = resp->elf_size;
     }
 
     return ret;
@@ -302,15 +327,111 @@ Result saltySDMemcpy(Handle salt, u64 to, u64 from, u64 size)
     return ret;
 }
 
+Result saltySDGetSDCard(Handle port, Handle *retrieve)
+{
+    Result ret = 0;
+
+    // Send a command
+    IpcCommand c;
+    ipcInitialize(&c);
+    ipcSendPid(&c);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+        u32 reserved[4];
+    } *raw;
+
+    raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 4;
+
+    write_log("SaltySD: sending IPC request for SD card handle\n");
+    ret = ipcDispatch(port);
+
+    if (R_SUCCEEDED(ret)) {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 result;
+            u64 reserved[2];
+        } *resp = r.Raw;
+
+        ret = resp->result;
+        //write_log("SaltySD: Got reply %x\n", resp->result);
+        
+        if (!ret)
+        {
+            write_log("SaltySD: got SD card handle %x\n", r.Handles[0]);
+            *retrieve = r.Handles[0];
+            
+            // Init fs stuff
+            FsFileSystem sdcardfs;
+            sdcardfs.s.handle = *retrieve;
+            int dev = fsdevMountDevice("sdmc", sdcardfs);
+            setDefaultDevice(dev);
+        }
+    }
+    else
+    {
+        //write_log("SaltySD: IPC dispatch failed, %x\n", ret);
+    }
+    
+    return ret;
+}
+
+void*  g_heapAddr;
+size_t g_heapSize;
+
+void setupELFHeap(void)
+{
+    u64 size = 0;
+    void* addr = NULL;
+    Result rc = 0;
+
+    rc = svcSetHeapSize(&addr, ((elf_area_size+0x200000+0x200000) & 0xffe00000));
+
+    if (rc || addr == NULL)
+    {
+        write_log("SaltySD Bootstrap: svcSetHeapSize failed with err %x\n", rc);
+    }
+
+    g_heapAddr = addr;
+    g_heapSize = ((elf_area_size+0x100000+0x200000) & 0xffe00000);
+}
+
+u64 find_next_elf_heap()
+{
+    u64 addr = g_heapAddr;
+    while (1)
+    {
+        MemoryInfo info;
+        u32 pageinfo;
+        Result ret = svcQueryMemory(&info, &pageinfo, addr);
+        
+        if (info.perm == Perm_Rw)
+            return info.addr;
+
+        addr = info.addr + info.size;
+        
+        if (!addr || ret) break;
+    }
+    
+    return 0;
+}
+
 Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 {
-    Result ret = svcSetHeapSize(out, size+0x200000);
+    Result ret = svcSetHeapSize(out, size+((elf_area_size+0x200000) & 0xffe00000));
     
-    //write_log("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+0x200000);
+    //write_log("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+((elf_area_size+0x200000) & 0xffe00000));
     
     if (!ret)
     {
-        *out += 0x200000;
+        *out += elf_area_size;
     }
     
     return ret;
@@ -324,7 +445,7 @@ Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
     
     if (id0 == 6 && id1 == 0 && handle == 0xffff8001)
     {
-        *out -= 0x200000;
+        *out -= elf_area_size;
     }
     
     return ret;
@@ -334,8 +455,14 @@ int main(int argc, char *argv[])
 {
     Result ret;
     Handle saltysd;
-    
+
     write_log("SaltySD Core: waddup\n");
+
+    // Get our address space in order
+    getCodeStart();
+    setupELFHeap();
+    elf_area_size = find_next_elf_heap() - (u64)g_heapAddr;
+    setupELFHeap();
     
     do
     {
@@ -346,6 +473,9 @@ int main(int argc, char *argv[])
 
     write_log("SaltySD Core: Got handle %x, restoring code...\n", saltysd);
     ret = saltySDRestore(saltysd);
+    if (ret) goto fail;
+    
+    ret = saltySDGetSDCard(saltysd, &sdcard);
     if (ret) goto fail;
 
     u8 orig_1[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x00, 0x00, 0xD4};
@@ -383,6 +513,33 @@ int main(int argc, char *argv[])
     
     u32 zero;
     //saltySDMemcpy(saltysd, code + 0x1E982C + 0x4000, &zero, 4);
+    
+    // Load plugin ELFs
+    void** tp = (void**)((u8*)armGetTls() + 0x1F8);
+    *tp = malloc(0x1000);
+    DIR *d;
+    struct dirent *dir;
+    d = opendir("sdmc:/SaltySD/plugins/");
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            char *dot = strrchr(dir->d_name, '.');
+            if (dot && !strcmp(dot, ".elf"))
+            {
+                u64 elf_addr, elf_size;
+                setupELFHeap();
+                saltySDLoadELF(saltysd, find_next_elf_heap(), &elf_addr, &elf_size, dir->d_name);
+                
+                //TODO: execute ELFs
+                
+                elf_area_size += elf_size;
+            }
+        }
+        closedir(d);
+    }
+    
+    free(*tp);
 
     write_log("SaltySD Core: terminating\n");
     ret = saltySDTerm(saltysd);

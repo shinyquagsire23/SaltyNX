@@ -53,7 +53,7 @@ Result saltySDTerm(Handle salt)
     return ret;
 }
 
-Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr)
+Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr, u64* elf_size, char* name)
 {
     Result ret;
     IpcCommand c;
@@ -67,6 +67,7 @@ Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr)
         u64 magic;
         u64 cmd_id;
         u64 heap;
+        char name[32];
         u64 reserved[2];
     } *raw;
 
@@ -75,6 +76,7 @@ Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr)
     raw->magic = SFCI_MAGIC;
     raw->cmd_id = 1;
     raw->heap = heap;
+    memcpy(raw->name, name, 31);
 
     ret = ipcDispatch(salt);
 
@@ -87,10 +89,12 @@ Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr)
             u64 magic;
             u64 result;
             u64 elf_addr;
+            u64 elf_size;
         } *resp = r.Raw;
 
         ret = resp->result;
         *elf_addr = resp->elf_addr;
+        *elf_size = resp->elf_size;
     }
 
     return ret;
@@ -133,8 +137,8 @@ int main(int argc, char *argv[])
     while (ret);
 
     write_log("SaltySD Bootstrap: Got handle %x, loading ELF...\n", saltysd);
-    u64 new_addr;
-    ret = saltySDLoadELF(saltysd, g_heapAddr, &new_addr);
+    u64 new_addr, new_size;
+    ret = saltySDLoadELF(saltysd, g_heapAddr, &new_addr, &new_size, "saltysd_core.elf");
     if (ret) goto fail;
     
     ret = saltySDTerm(saltysd);

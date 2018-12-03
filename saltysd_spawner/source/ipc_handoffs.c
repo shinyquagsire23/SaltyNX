@@ -42,6 +42,41 @@ Result fsp_init(Service fsp)
     return rc;
 }
 
+Result fsp_getSdCard(Service fsp, Handle* out)
+{
+    Result rc;
+    IpcCommand c;
+    ipcInitialize(&c);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+    } *raw;
+
+    raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 18;
+
+    rc = serviceIpcDispatch(&fsp);
+
+    if (R_SUCCEEDED(rc)) {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 result;
+        } *resp = r.Raw;
+
+        *out = r.Handles[0];
+
+        rc = resp->result;
+    }
+    
+    return rc;
+}
+
 Result handle_cmd(int cmd)
 {
     Result ret = 0;
@@ -64,18 +99,36 @@ Result handle_cmd(int cmd)
         } *resp = r.Raw;
 
         write_log("Spawner: SaltySD (pid %x) asked for handle %s\n", r.Pid, resp->name);
-                
-        Service toget;
-        ret = smGetService(&toget, resp->name);
-        if (!ret && strcmp(resp->name, "fsp-srv"))
-        {
-            ret = fsp_init(toget);
-        }
 
-        if (!ret)
-            ipcSendHandleMove(&c, toget.handle);
+        if (!strcmp(resp->name, "sdcard"))
+        {
+            Service toget;
+            Handle sdcard;
+            ret = smGetService(&toget, "fsp-srv");
+            if (!ret)
+                ret = fsp_init(toget);
+            if (!ret)
+                ret = fsp_getSdCard(toget, &sdcard);
+            
+            if (!ret)
+                ipcSendHandleMove(&c, sdcard);
+            else
+                write_log("Spawner: couldn't get SdCard handle, ret %x\n", ret);
+        }
         else
-            write_log("Spawner: couldn't get handle, ret %x\n", ret);
+        {
+            Service toget;
+            ret = smGetService(&toget, resp->name);
+            if (!ret && !strcmp(resp->name, "fsp-srv"))
+            {
+                ret = fsp_init(toget);
+            }
+
+            if (!ret)
+                ipcSendHandleMove(&c, toget.handle);
+            else
+                write_log("Spawner: couldn't get handle, ret %x\n", ret);
+        }
     }
     else if (cmd == 2)
     {

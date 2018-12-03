@@ -10,12 +10,14 @@
 
 #include "useful.h"
 
+#define MODULE_SALTYSD 420
+
 u32 __nx_applet_type = AppletType_None;
 
 void serviceThread(void* buf);
 
-Handle saltyport;
-static char g_heap[0x20000];
+Handle saltyport, sdcard;
+static char g_heap[0x80000];
 bool should_terminate = false;
 
 void __libnx_initheap(void)
@@ -100,7 +102,7 @@ Result handleServiceCmd(int cmd)
         should_terminate = true;
         write_log("SaltySD: cmd 0, terminating\n");
     }
-    else if (cmd == 1) // LoadCore
+    else if (cmd == 1) // LoadELF
     {
         IpcParsedCommand r;
         ipcParse(&r);
@@ -109,23 +111,66 @@ Result handleServiceCmd(int cmd)
             u64 magic;
             u64 command;
             u64 heap;
+            char name[32];
             u32 reserved[2];
         } *resp = r.Raw;
 
         Handle proc = r.Handles[0];
-        write_log("SaltySD: cmd 1 handler, proc handle %x, heap %llx\n", proc, resp->heap);
+        u64 heap = resp->heap;
+        write_log("SaltySD: cmd 1 handler, proc handle %x, heap %llx, path %s\n", proc, heap, resp->name);
         
-        u64 new_start;
-        ret = load_elf_proc(proc, r.Pid, resp->heap, &new_start, saltysd_core_elf, saltysd_core_elf_size);
+        char* path = malloc(64);
+        uint8_t* elf_data = NULL;
+        u32 elf_size = 0;
+
+        snprintf(path, 64, "sdmc:/SaltySD/plugins/%s", resp->name);
+        FILE* f = fopen(path, "rb");
+        if (!f)
+        {
+            snprintf(path, 64, "sdmc:/SaltySD/%s", resp->name);
+            f = fopen(path, "rb");
+        }
+
+        if (!f && !strcmp(resp->name, "saltysd_core.elf"))
+        {
+            write_log("SaltySD: loading builtin %s\n", resp->name);
+            elf_data = saltysd_core_elf;
+            elf_size = saltysd_core_elf_size;
+        }
+        else
+        {
+            fseek(f, 0, SEEK_END);
+            elf_size = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            
+            write_log("SaltySD: loading %s, size 0x%x\n", path, elf_size);
+            
+            elf_data = malloc(elf_size);
+            
+            fread(elf_data, elf_size, 1, f);
+        }
+        free(path);
+        
+        u64 new_start = 0, new_size = 0;
+        if (elf_data && elf_size)
+            ret = load_elf_proc(proc, r.Pid, heap, &new_start, &new_size, elf_data, elf_size);
+        else
+            ret = MAKERESULT(MODULE_SALTYSD, 1);
 
         svcCloseHandle(proc);
+        
+        if (f)
+        {
+            free(elf_data);
+            fclose(f);
+        }
         
         // Ship off results
         struct {
             u64 magic;
             u64 result;
             u64 new_addr;
-            u64 reserved[1];
+            u64 new_size;
         } *raw;
 
         raw = ipcPrepareHeader(&c, sizeof(*raw));
@@ -133,6 +178,7 @@ Result handleServiceCmd(int cmd)
         raw->magic = SFCO_MAGIC;
         raw->result = ret;
         raw->new_addr = new_start;
+        raw->new_size = new_size;
         
         write_log("SaltySD: new_addr to %llx, %x\n", new_start, ret);
 
@@ -202,6 +248,12 @@ Result handleServiceCmd(int cmd)
         raw->result = 0;
 
         return 0;
+    }
+    else if (cmd == 4) // GetSDCard
+    {        
+        write_log("SaltySD: cmd 4 handler\n");
+
+        ipcSendHandleCopy(&c, sdcard);
     }
     else
     {
@@ -283,7 +335,7 @@ void serviceThread(void* buf)
 int main(int argc, char *argv[])
 {
     Result ret;
-    Handle port, fsp, thread;
+    Handle port;
     
     write_log("SaltySD says hello!\n");
     
@@ -295,14 +347,20 @@ int main(int argc, char *argv[])
     while (ret);
     
     // Begin asking for handles
-    get_handle(port, &fsp, "fsp-srv");
+    get_handle(port, &sdcard, "sdcard");
     terminate_spawner(port);
     svcCloseHandle(port);
+    
+    // Init fs stuff
+    FsFileSystem sdcardfs;
+    sdcardfs.s.handle = sdcard;
+    fsdevMountDevice("sdmc", sdcardfs);
 
     // Start our port
     // For some reason, we only have one session maximum (0 reslimit handle related?)    
     ret = svcManageNamedPort(&saltyport, "SaltySD", 1);
 
+    // Main service loop
     u64* pids = malloc(0x200 * sizeof(u64));
     u64 max = 0;
     while (1)
@@ -334,6 +392,8 @@ int main(int argc, char *argv[])
         svcSleepThread(1000*1000);
     }
     free(pids);
+    
+    fsdevUnmountAll();
 
     return 0;
 }
