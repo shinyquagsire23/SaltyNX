@@ -17,7 +17,7 @@ u32 __nx_applet_type = AppletType_None;
 void serviceThread(void* buf);
 
 Handle saltyport, sdcard;
-static char g_heap[0x80000];
+static char g_heap[0x100000];
 bool should_terminate = false;
 
 void __libnx_initheap(void)

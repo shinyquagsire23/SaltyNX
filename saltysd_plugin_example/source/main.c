@@ -9,6 +9,9 @@
 
 #include "useful.h"
 
+#include "saltysd_core.h"
+#include "saltysd_ipc.h"
+
 u32 __nx_applet_type = AppletType_None;
 
 static char g_heap[0x8000];
@@ -48,6 +51,13 @@ void __attribute__((weak)) NORETURN __libnx_exit(int rc)
 int main(int argc, char *argv[])
 {
     write_log("SaltySD Plugin: alive\n");
+    
+    char* ver = "Ver. %d.%d.%d";
+    u64 dst_3 = SaltySDCore_findCode(ver, strlen(ver));
+    if (dst_3)
+    {
+        SaltySD_Memcpy(dst_3, "SaltySD yeet", 13);
+    }
 
     __libnx_exit(0);
 }

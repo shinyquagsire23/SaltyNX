@@ -8,6 +8,9 @@
 #include <switch/kernel/ipc.h>
 
 #include "useful.h"
+#include "saltysd_ipc.h"
+#include "saltysd_core.h"
+#include "saltysd_dynamic.h"
 
 #include "bm.h"
 
@@ -15,15 +18,15 @@ u32 __nx_applet_type = AppletType_None;
 
 static char g_heap[0x20000];
 
-extern void _start();
 extern void __nx_exit_clear(void* ctx, Handle thread, void* addr);
+extern elf_trampoline(void* context, Handle thread, void* func);
+void* __stack_tmp;
 
 Handle orig_main_thread;
 void* orig_ctx;
 
 Handle sdcard;
 size_t elf_area_size = 0x80000;
-u64 code_start = 0;
 
 struct _reent reent;
 
@@ -49,92 +52,6 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
     __libc_init_array();
 }
 
-u64 getCodeStart()
-{
-    if (code_start) return code_start;
-
-    u64 addr = 0;
-    while (1)
-    {
-        MemoryInfo info;
-        u32 pageinfo;
-        Result ret = svcQueryMemory(&info, &pageinfo, addr);
-        
-        if (info.addr != (u64)_start && info.perm == Perm_Rx)
-        {
-            addr = info.addr;
-            break;
-        }
-
-        addr = info.addr + info.size;
-
-        if (!addr || ret) break;
-    }
-    
-    code_start = addr;
-    return addr;
-}
-
-u64 getCodeSize()
-{
-    u64 addr = 0;
-    while (1)
-    {
-        MemoryInfo info;
-        u32 pageinfo;
-        Result ret = svcQueryMemory(&info, &pageinfo, addr);
-        
-        if (info.addr != (u64)_start && info.perm == Perm_Rx)
-        {
-            return info.size;
-        }
-
-        addr = info.addr + info.size;
-
-        if (!addr || ret) break;
-    }
-
-    return 0;
-}
-
-u64 findCode(u8* code, size_t size)
-{
-    Result ret = 0;
-    u64 addr = getCodeStart();
-    u64 addr_size = getCodeSize();
-
-    while (1)
-    {
-        void* out = boyer_moore_search((void*)addr, addr_size, code, size);
-        if (out) return out;
-        
-        addr += addr_size;
-
-        while (1)
-        {
-            MemoryInfo info;
-            u32 pageinfo;
-            ret = svcQueryMemory(&info, &pageinfo, addr);
-            
-            if (info.perm != Perm_Rx)
-            {
-                addr = info.addr + info.size;
-            }
-            else
-            {
-                addr = info.addr;
-                addr_size = info.size;
-                break;
-            }
-            if (!addr || ret) break;
-        }
-        
-        if (!addr || ret) break;
-    }
-
-    return 0;
-}
-
 void __attribute__((weak)) NORETURN __libnx_exit(int rc)
 {
     fsdevUnmountAll();
@@ -143,244 +60,11 @@ void __attribute__((weak)) NORETURN __libnx_exit(int rc)
     void __libc_fini_array(void);
     __libc_fini_array();
     
-    u64 addr = getCodeStart();
+    u64 addr = SaltySDCore_getCodeStart();
 
     write_log("SaltySD Core: jumping to %llx\n", addr);
 
     __nx_exit_clear(orig_ctx, orig_main_thread, (void*)addr);
-}
-
-
-Result saltySDTerm(Handle salt)
-{
-    Result ret;
-    IpcCommand c;
-
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-
-    struct 
-    {
-        u64 magic;
-        u64 cmd_id;
-        u64 zero;
-        u64 reserved[2];
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 0;
-    raw->zero = 0;
-
-    ret = ipcDispatch(salt);
-
-    if (R_SUCCEEDED(ret)) 
-    {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp = r.Raw;
-
-        ret = resp->result;
-    }
-    
-    // Session terminated works too.
-    if (ret == 0xf601) return 0;
-
-    return ret;
-}
-
-Result saltySDRestore(Handle salt)
-{
-    Result ret;
-    IpcCommand c;
-
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-
-    struct 
-    {
-        u64 magic;
-        u64 cmd_id;
-        u64 zero;
-        u64 reserved[2];
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 2;
-    raw->zero = 0;
-
-    ret = ipcDispatch(salt);
-
-    if (R_SUCCEEDED(ret)) 
-    {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp = r.Raw;
-
-        ret = resp->result;
-    }
-    
-    armICacheInvalidate(getCodeStart(), getCodeSize());
-    
-
-    return ret;
-}
-
-Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr, u64* elf_size, char* name)
-{
-    Result ret;
-    IpcCommand c;
-
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-    ipcSendHandleCopy(&c, CUR_PROCESS_HANDLE);
-
-    struct 
-    {
-        u64 magic;
-        u64 cmd_id;
-        u64 heap;
-        char name[32];
-        u64 reserved[2];
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 1;
-    raw->heap = heap;
-    strncpy(raw->name, name, 31);
-
-    ret = ipcDispatch(salt);
-
-    if (R_SUCCEEDED(ret)) 
-    {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-            u64 elf_addr;
-            u64 elf_size;
-        } *resp = r.Raw;
-
-        ret = resp->result;
-        *elf_addr = resp->elf_addr;
-        *elf_size = resp->elf_size;
-    }
-
-    return ret;
-}
-
-Result saltySDMemcpy(Handle salt, u64 to, u64 from, u64 size)
-{
-    Result ret;
-    IpcCommand c;
-
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-
-    struct 
-    {
-        u64 magic;
-        u64 cmd_id;
-        u64 to;
-        u64 from;
-        u64 size;
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 3;
-    raw->from = from;
-    raw->to = to;
-    raw->size = size;
-
-    ret = ipcDispatch(salt);
-
-    if (R_SUCCEEDED(ret)) 
-    {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp = r.Raw;
-
-        ret = resp->result;
-    }
-
-    return ret;
-}
-
-Result saltySDGetSDCard(Handle port, Handle *retrieve)
-{
-    Result ret = 0;
-
-    // Send a command
-    IpcCommand c;
-    ipcInitialize(&c);
-    ipcSendPid(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u32 reserved[4];
-    } *raw;
-
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 4;
-
-    write_log("SaltySD: sending IPC request for SD card handle\n");
-    ret = ipcDispatch(port);
-
-    if (R_SUCCEEDED(ret)) {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 result;
-            u64 reserved[2];
-        } *resp = r.Raw;
-
-        ret = resp->result;
-        //write_log("SaltySD: Got reply %x\n", resp->result);
-        
-        if (!ret)
-        {
-            write_log("SaltySD: got SD card handle %x\n", r.Handles[0]);
-            *retrieve = r.Handles[0];
-            
-            // Init fs stuff
-            FsFileSystem sdcardfs;
-            sdcardfs.s.handle = *retrieve;
-            int dev = fsdevMountDevice("sdmc", sdcardfs);
-            setDefaultDevice(dev);
-        }
-    }
-    else
-    {
-        //write_log("SaltySD: IPC dispatch failed, %x\n", ret);
-    }
-    
-    return ret;
 }
 
 void*  g_heapAddr;
@@ -423,6 +107,28 @@ u64 find_next_elf_heap()
     return 0;
 }
 
+void SaltySDCore_RegisterExistingModules()
+{
+    u64 addr = 0;
+    while (1)
+    {
+        MemoryInfo info;
+        u32 pageinfo;
+        Result ret = svcQueryMemory(&info, &pageinfo, addr);
+        
+        if (info.perm == Perm_Rx)
+        {
+            SaltySDCore_RegisterModule((void*)info.addr);
+        }
+
+        addr = info.addr + info.size;
+        
+        if (!addr || ret) break;
+    }
+    
+    return 0;
+}
+
 Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 {
     Result ret = svcSetHeapSize(out, size+((elf_area_size+0x200000) & 0xffe00000));
@@ -451,71 +157,48 @@ Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
     return ret;
 }
 
-extern elf_trampoline(void* context, Handle thread, void* func);
-
-int main(int argc, char *argv[])
+void SaltySDCore_PatchSVCs()
 {
-    Result ret;
-    Handle saltysd;
-
-    write_log("SaltySD Core: waddup\n");
-
-    // Get our address space in order
-    getCodeStart();
-    setupELFHeap();
-    elf_area_size = find_next_elf_heap() - (u64)g_heapAddr;
-    setupELFHeap();
-    
-    do
-    {
-        ret = svcConnectToNamedPort(&saltysd, "SaltySD");
-        svcSleepThread(1000*1000);
-    }
-    while (ret);
-
-    write_log("SaltySD Core: Got handle %x, restoring code...\n", saltysd);
-    ret = saltySDRestore(saltysd);
-    if (ret) goto fail;
-    
-    ret = saltySDGetSDCard(saltysd, &sdcard);
-    if (ret) goto fail;
-
     u8 orig_1[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x00, 0x00, 0xD4};
     u8 orig_2[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x05, 0x00, 0xD4};
     u8 nop[0x4] = {0x1F, 0x20, 0x03, 0xD5};
     u8 patch[0x10] = {0x44, 0x00, 0x00, 0x58, 0x80, 0x00, 0x1F, 0xD6, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x00};
     
-    u64 code = getCodeStart();
-    u64 dst_1 = findCode(orig_1, 8);
-    u64 dst_2 = findCode(orig_2, 8);
+    u64 code = SaltySDCore_getCodeStart();
+    u64 dst_1 = SaltySDCore_findCode(orig_1, 8);
+    u64 dst_2 = SaltySDCore_findCode(orig_2, 8);
     
-    write_log("found code at %llx, %llx\n", dst_1, dst_2);
+    if (!dst_1 || !dst_2)
+    {
+        write_log("SaltySD Core: Failed to find svcGetInfo and svcGetHeapSize! %llx, %llx\n", dst_1, dst_2);
+        return;
+    }
 
     *(u64*)&patch[8] = svcSetHeapSizeIntercept;
     if (dst_1 & 4)
     {
-        saltySDMemcpy(saltysd, dst_1, (u64)nop, 0x4);
-        saltySDMemcpy(saltysd, dst_1+4, (u64)patch, 0x10);
+        SaltySD_Memcpy(dst_1, (u64)nop, 0x4);
+        SaltySD_Memcpy(dst_1+4, (u64)patch, 0x10);
     }
     else
     {
-        saltySDMemcpy(saltysd, dst_1, (u64)patch, 0x10);
+        SaltySD_Memcpy(dst_1, (u64)patch, 0x10);
     }
     
     *(u64*)&patch[8] = svcGetInfoIntercept;
     if (dst_2 & 4)
     {
-        saltySDMemcpy(saltysd, dst_2, (u64)nop, 0x4);
-        saltySDMemcpy(saltysd, dst_2+4, (u64)patch, 0x10);
+        SaltySD_Memcpy(dst_2, (u64)nop, 0x4);
+        SaltySD_Memcpy(dst_2+4, (u64)patch, 0x10);
     }
     else
     {
-        saltySDMemcpy(saltysd, dst_2, (u64)patch, 0x10);
+        SaltySD_Memcpy(dst_2, (u64)patch, 0x10);
     }
-    
-    u32 zero;
-    //saltySDMemcpy(saltysd, code + 0x1E982C + 0x4000, &zero, 4);
-    
+}
+
+void SaltySDCore_LoadPlugins()
+{
     // Load plugin ELFs
     void** tp = (void**)((u8*)armGetTls() + 0x1F8);
     *tp = malloc(0x1000);
@@ -535,11 +218,12 @@ int main(int argc, char *argv[])
             {
                 u64 elf_addr, elf_size;
                 setupELFHeap();
-                saltySDLoadELF(saltysd, find_next_elf_heap(), &elf_addr, &elf_size, dir->d_name);
-                
-                //TODO: execute ELFs
+                SaltySD_LoadELF(find_next_elf_heap(), &elf_addr, &elf_size, dir->d_name);
+
                 entries = realloc(entries, ++num_elfs * sizeof(void*));
                 entries[num_elfs-1] = (void*)elf_addr;
+
+                SaltySDCore_RegisterModule(entries[num_elfs-1]);
                 
                 elf_area_size += elf_size;
             }
@@ -549,18 +233,43 @@ int main(int argc, char *argv[])
     
     for (int i = 0; i < num_elfs; i++)
     {
-       elf_trampoline(orig_ctx, orig_main_thread, entries[i]);
+        SaltySDCore_DynamicLinkModule(entries[i]);
+        elf_trampoline(orig_ctx, orig_main_thread, entries[i]);
     }
     if (num_elfs)
         free(entries);
     
     free(*tp);
+}
 
-    write_log("SaltySD Core: terminating\n");
-    ret = saltySDTerm(saltysd);
+int main(int argc, char *argv[])
+{
+    Result ret;
+
+    write_log("SaltySD Core: waddup\n");
+
+    // Get our address space in order
+    SaltySDCore_getCodeStart();
+    setupELFHeap();
+    elf_area_size = find_next_elf_heap() - (u64)g_heapAddr;
+    setupELFHeap();
+    
+    SaltySDCore_RegisterExistingModules();
+    
+    SaltySD_Init();
+
+    write_log("SaltySD Core: restoring code...\n");
+    ret = SaltySD_Restore();
+    if (ret) goto fail;
+    
+    ret = SaltySD_GetSDCard(&sdcard);
     if (ret) goto fail;
 
-    svcCloseHandle(saltysd);
+    SaltySDCore_PatchSVCs();
+    SaltySDCore_LoadPlugins();
+
+    ret = SaltySD_Deinit();
+    if (ret) goto fail;
 
     __libnx_exit(0);
 
