@@ -107,6 +107,8 @@ u64 find_next_elf_heap()
     return 0;
 }
 
+extern void _start();
+
 void SaltySDCore_RegisterExistingModules()
 {
     u64 addr = 0;
@@ -119,6 +121,8 @@ void SaltySDCore_RegisterExistingModules()
         if (info.perm == Perm_Rx)
         {
             SaltySDCore_RegisterModule((void*)info.addr);
+            if (info.addr != _start)
+                SaltySDCore_RegisterBuiltinModule((void*)info.addr);
         }
 
         addr = info.addr + info.size;
