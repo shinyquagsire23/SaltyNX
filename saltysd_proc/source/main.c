@@ -78,7 +78,7 @@ void hijack_pid(u64 pid)
     ret = svcGetDebugThreadContext(&context, debug, tids[0], RegisterGroup_All);
     oldContext = context;
 
-    write_log("SaltySD: new max %llx, %x %016llx\n", pid, threads, context.pc.x);
+    SaltySD_printf("SaltySD: new max %llx, %x %016llx\n", pid, threads, context.pc.x);
 
     hijack_bootstrap(&debug, pid, tids[0]);
     
@@ -100,7 +100,7 @@ Result handleServiceCmd(int cmd)
     {
         ret = 0;
         should_terminate = true;
-        write_log("SaltySD: cmd 0, terminating\n");
+        //SaltySD_printf("SaltySD: cmd 0, terminating\n");
     }
     else if (cmd == 1) // LoadELF
     {
@@ -117,33 +117,37 @@ Result handleServiceCmd(int cmd)
 
         Handle proc = r.Handles[0];
         u64 heap = resp->heap;
-        write_log("SaltySD: cmd 1 handler, proc handle %x, heap %llx, path %s\n", proc, heap, resp->name);
+        char name[32];
+        
+        memcpy(name, resp->name, 32);
+        
+        SaltySD_printf("SaltySD: cmd 1 handler, proc handle %x, heap %llx, path %s\n", proc, heap, name);
         
         char* path = malloc(64);
         uint8_t* elf_data = NULL;
         u32 elf_size = 0;
 
-        snprintf(path, 64, "sdmc:/SaltySD/plugins/%s", resp->name);
+        snprintf(path, 64, "sdmc:/SaltySD/plugins/%s", name);
         FILE* f = fopen(path, "rb");
         if (!f)
         {
-            snprintf(path, 64, "sdmc:/SaltySD/%s", resp->name);
+            snprintf(path, 64, "sdmc:/SaltySD/%s", name);
             f = fopen(path, "rb");
         }
 
-        if (!f && !strcmp(resp->name, "saltysd_core.elf"))
+        if (!f && !strcmp(name, "saltysd_core.elf"))
         {
-            write_log("SaltySD: loading builtin %s\n", resp->name);
+            SaltySD_printf("SaltySD: loading builtin %s\n", name);
             elf_data = saltysd_core_elf;
             elf_size = saltysd_core_elf_size;
         }
-        else
+        else if (f)
         {
             fseek(f, 0, SEEK_END);
             elf_size = ftell(f);
             fseek(f, 0, SEEK_SET);
             
-            write_log("SaltySD: loading %s, size 0x%x\n", path, elf_size);
+            SaltySD_printf("SaltySD: loading %s, size 0x%x\n", path, elf_size);
             
             elf_data = malloc(elf_size);
             
@@ -180,7 +184,7 @@ Result handleServiceCmd(int cmd)
         raw->new_addr = new_start;
         raw->new_size = new_size;
         
-        write_log("SaltySD: new_addr to %llx, %x\n", new_start, ret);
+        debug_log("SaltySD: new_addr to %llx, %x\n", new_start, ret);
 
         return 0;
     }
@@ -195,7 +199,7 @@ Result handleServiceCmd(int cmd)
             u32 reserved[4];
         } *resp = r.Raw;
 
-        write_log("SaltySD: cmd 2 handler\n");
+        SaltySD_printf("SaltySD: cmd 2 handler\n");
         
         Handle debug;
         ret = svcDebugActiveProcess(&debug, r.Pid);
@@ -218,21 +222,27 @@ Result handleServiceCmd(int cmd)
             u64 from;
             u64 size;
         } *resp = r.Raw;
+        
+        u64 to, from, size;
+        to = resp->to;
+        from = resp->from;
+        size = resp->size;
 
-        write_log("SaltySD: cmd 3 handler, memcpy(%llx, %llx, %llx)\n", resp->to, resp->from, resp->size);
+        SaltySD_printf("SaltySD: cmd 3 handler, memcpy(%llx, %llx, %llx)\n", to, from, size);
         
         Handle debug;
         ret = svcDebugActiveProcess(&debug, r.Pid);
         if (!ret)
         {
-            u8* tmp = malloc(resp->size);
+            u8* tmp = malloc(size);
 
-            ret = svcReadDebugProcessMemory(tmp, debug, resp->from, resp->size);
-            ret = svcWriteDebugProcessMemory(debug, tmp, resp->to, resp->size);
+            ret = svcReadDebugProcessMemory(tmp, debug, from, size);
+            if (!ret)
+                ret = svcWriteDebugProcessMemory(debug, tmp, to, size);
 
             free(tmp);
             
-            ret = svcCloseHandle(debug);
+            svcCloseHandle(debug);
         }
         
         // Ship off results
@@ -245,15 +255,31 @@ Result handleServiceCmd(int cmd)
         raw = ipcPrepareHeader(&c, sizeof(*raw));
 
         raw->magic = SFCO_MAGIC;
-        raw->result = 0;
+        raw->result = ret;
 
         return 0;
     }
     else if (cmd == 4) // GetSDCard
     {        
-        write_log("SaltySD: cmd 4 handler\n");
+        SaltySD_printf("SaltySD: cmd 4 handler\n");
 
         ipcSendHandleCopy(&c, sdcard);
+    }
+    else if (cmd == 5) // Log
+    {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 command;
+            char log[64];
+            u32 reserved[2];
+        } *resp = r.Raw;
+
+        SaltySD_printf(resp->log);
+
+        ret = 0;
     }
     else
     {
@@ -277,7 +303,7 @@ Result handleServiceCmd(int cmd)
 void serviceThread(void* buf)
 {
     Result ret;
-    write_log("SaltySD: accepting service calls\n");
+    //SaltySD_printf("SaltySD: accepting service calls\n");
     should_terminate = false;
 
     while (1)
@@ -286,11 +312,11 @@ void serviceThread(void* buf)
         ret = svcAcceptSession(&session, saltyport);
         if (ret && ret != 0xf201)
         {
-            //write_log("SaltySD: svcAcceptSession returned %x\n", ret);
+            //SaltySD_printf("SaltySD: svcAcceptSession returned %x\n", ret);
         }
         else if (!ret)
         {
-            //write_log("SaltySD: session %x being handled\n", session);
+            //SaltySD_printf("SaltySD: session %x being handled\n", session);
 
             int handle_index;
             int reply_num = 0;
@@ -301,7 +327,7 @@ void serviceThread(void* buf)
                 
                 if (should_terminate) break;
                 
-                //write_log("SaltySD: IPC reply ret %x, index %x, sess %x\n", ret, handle_index, session);
+                //SaltySD_printf("SaltySD: IPC reply ret %x, index %x, sess %x\n", ret, handle_index, session);
                 if (ret) break;
                 
                 IpcParsedCommand r;
@@ -329,7 +355,7 @@ void serviceThread(void* buf)
         svcSleepThread(1000*1000*100);
     }
     
-    write_log("SaltySD: done accepting service calls\n");
+    //SaltySD_printf("SaltySD: done accepting service calls\n");
 }
 
 int main(int argc, char *argv[])
@@ -337,7 +363,7 @@ int main(int argc, char *argv[])
     Result ret;
     Handle port;
     
-    write_log("SaltySD says hello!\n");
+    debug_log("SaltySD says hello!\n");
     
     do
     {

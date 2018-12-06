@@ -1,6 +1,7 @@
 #include "saltysd_ipc.h"
 
 #include <switch.h>
+#include <stdarg.h>
 
 #include "saltysd_core.h"
 #include "useful.h"
@@ -11,21 +12,22 @@ void SaltySD_Init()
 {
     Result ret;
 
-    do
+    for (int i = 0; i < 200; i++)
     {
         ret = svcConnectToNamedPort(&saltysd, "SaltySD");
         svcSleepThread(1000*1000);
+        
+        if (!ret) break;
     }
-    while (ret);
     
-    write_log("SaltySD Core: Got handle %x\n", saltysd);
+    //debug_log("SaltySD Core: Got handle %x\n", saltysd);
 }
 
 Result SaltySD_Deinit()
 {
     Result ret;
 
-    write_log("SaltySD Core: terminating\n");
+    //debug_log("SaltySD Core: terminating\n");
     ret = SaltySD_Term();
     if (ret) return ret;
 
@@ -242,7 +244,7 @@ Result SaltySD_GetSDCard(Handle *retrieve)
         
         if (!ret)
         {
-            write_log("SaltySD Core: got SD card handle %x\n", r.Handles[0]);
+            SaltySD_printf("SaltySD Core: got SD card handle %x\n", r.Handles[0]);
             *retrieve = r.Handles[0];
             
             // Init fs stuff
@@ -255,3 +257,70 @@ Result SaltySD_GetSDCard(Handle *retrieve)
     
     return ret;
 }
+
+Result SaltySD_print(char* out)
+{
+    Result ret;
+    IpcCommand c;
+
+    ipcInitialize(&c);
+
+    struct 
+    {
+        u64 magic;
+        u64 cmd_id;
+        char log[64];
+        u64 reserved[2];
+    } *raw;
+
+    raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 5;
+    strncpy(raw->log, out, 64);
+
+    ret = ipcDispatch(saltysd);
+
+    if (R_SUCCEEDED(ret)) 
+    {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 result;
+        } *resp = r.Raw;
+
+        ret = resp->result;
+    }
+
+    return ret;
+}
+
+Result SaltySD_printf(const char* format, ...)
+{
+    Result ret;
+    char tmp[256];
+
+    va_list args;
+    va_start(args, format);
+    vsnprintf(tmp, 256, format, args);
+    va_end(args);
+
+    for (int i = 0; i < strlen(tmp); i)
+    {
+        ret = SaltySD_print(tmp + i);
+        i += 64;
+
+        if (ret) break;
+    }
+
+    if (ret)
+    {
+        debug_log("SaltySD Core: failed w/ error %x, msg: %s", ret, tmp);
+    }
+
+    return ret;
+}
+
+

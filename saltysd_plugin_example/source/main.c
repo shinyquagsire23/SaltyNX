@@ -44,29 +44,31 @@ void __attribute__((weak)) NORETURN __libnx_exit(int rc)
     void __libc_fini_array(void);
     __libc_fini_array();
 
-    write_log("SaltySD Plugin: jumping to %p\n", orig_saved_lr);
+    SaltySD_printf("SaltySD Plugin: jumping to %p\n", orig_saved_lr);
 
     __nx_exit(0, orig_saved_lr);
 }
 
 extern uint64_t _ZN2nn2fs8ReadFileEPmNS0_10FileHandleElPvm(uint64_t idk1, uint64_t idk2, uint64_t idk3, uint64_t idk4, uint64_t idk5) LINKABLE;
-extern uint64_t _ZN2nn2fs8ReadFileENS0_10FileHandleElPvm(uint64_t idk1, uint64_t idk2, uint64_t idk3, uint64_t idk4) LINKABLE;
+extern uint64_t _ZN2nn2fs8ReadFileENS0_10FileHandleElPvm(uint64_t handle, uint64_t offset, uint64_t out, uint64_t size) LINKABLE;
 
 uint64_t ReadFile_intercept(uint64_t idk1, uint64_t idk2, uint64_t idk3, uint64_t idk4, uint64_t idk5)
 {
-    write_log("SaltySD Plugin: ReadFile(%llx, %llx, %llx, %llx, %llx)\n", idk1, idk2, idk3, idk4, idk5);
-    return _ZN2nn2fs8ReadFileEPmNS0_10FileHandleElPvm(idk1, idk2, idk3, idk4, idk5);
+    uint64_t ret = _ZN2nn2fs8ReadFileEPmNS0_10FileHandleElPvm(idk1, idk2, idk3, idk4, idk5);
+    debug_log("SaltySD Plugin: ReadFile(%llx, %llx, %llx, %llx, %llx) -> %llx\n", idk1, idk2, idk3, idk4, idk5, ret);
+    return ret;
 }
 
 uint64_t ReadFile_intercept2(uint64_t handle, uint64_t offset, uint64_t out, uint64_t size)
 {
-    write_log("SaltySD Plugin: ReadFile2(%llx, %llx, %llx, %llx)\n", handle, offset, out, size);
-    return _ZN2nn2fs8ReadFileENS0_10FileHandleElPvm(handle, offset, out, size);
+    uint64_t ret = _ZN2nn2fs8ReadFileENS0_10FileHandleElPvm(handle, offset, out, size);
+    debug_log("SaltySD Plugin: ReadFile2(%llx, %llx, %llx, %llx) -> %llx\n", handle, offset, out, size, ret);
+    return ret;
 }
 
 int main(int argc, char *argv[])
 {
-    write_log("SaltySD Plugin: alive\n");
+    SaltySD_printf("SaltySD Plugin: alive\n");
     
     char* ver = "Ver. %d.%d.%d";
     u64 dst_3 = SaltySDCore_findCode(ver, strlen(ver));

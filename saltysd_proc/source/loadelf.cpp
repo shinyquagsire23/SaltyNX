@@ -46,7 +46,7 @@ Result load_elf_debug(Handle debug, uint64_t* start, uint8_t* elf_data, u32 elf_
     data_fsize = data_seg.phdr->p_filesz;
     text_msize = text_seg.phdr->p_memsz;
     data_msize = data_seg.phdr->p_memsz;
-    write_log(".text to %llx, .data to %llx\n", text_addr, data_addr);
+    SaltySD_printf(".text to %llx, .data to %llx\n", text_addr, data_addr);
     
     elf.relocate_segment(0, text_addr);
     elf.relocate_segment(1, data_addr);
@@ -127,7 +127,7 @@ Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, 
     // Unmap heap, map new code
     
     u64 load_addr;
-    write_log("SaltySD: Search for size %llx\n", (max_vaddr - min_vaddr));
+    SaltySD_printf("SaltySD: Search for size %llx\n", (max_vaddr - min_vaddr));
     do
     {
         load_addr = randomGet64() & 0xFFFFFF000ull;
@@ -136,7 +136,7 @@ Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, 
     while (ret == 0xDC01 || ret == 0xD401);
     if (ret) return ret;
     
-    write_log("SaltySD: Found free address space at %llx, size %llx\n", load_addr, (max_vaddr - min_vaddr));
+    SaltySD_printf("SaltySD: Found free address space at %llx, size %llx\n", load_addr, (max_vaddr - min_vaddr));
     
     // Adjust permissions and then return
     for (auto seg : elf.get_segments())

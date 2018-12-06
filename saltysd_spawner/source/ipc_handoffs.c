@@ -135,28 +135,6 @@ Result handle_cmd(int cmd)
         should_terminate = true;
         ret = 0;
     }
-    else if (cmd == 3)
-    {
-        IpcParsedCommand r;
-        ipcParse(&r);
-
-        struct {
-            u64 magic;
-            u64 command;
-            char name[12];
-            u32 reserved;
-        } *resp = r.Raw;
-
-        write_log("Spawner: SaltySD (pid %x) asked for port handle %s\n", r.Pid, resp->name);
-                
-        Handle toget;
-        ret = smRegisterService(&toget, resp->name, false, 10);
-
-        if (!ret)
-            ipcSendHandleMove(&c, toget);
-        else
-            write_log("Spawner: couldn't get handle, ret %x\n", ret);
-    }
     else
     {
         ret = 0xEE01;

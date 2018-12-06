@@ -62,7 +62,7 @@ void __attribute__((weak)) NORETURN __libnx_exit(int rc)
     
     u64 addr = SaltySDCore_getCodeStart();
 
-    write_log("SaltySD Core: jumping to %llx\n", addr);
+    debug_log("SaltySD Core: jumping to %llx\n", addr);
 
     __nx_exit_clear(orig_ctx, orig_main_thread, (void*)addr);
 }
@@ -80,7 +80,7 @@ void setupELFHeap(void)
 
     if (rc || addr == NULL)
     {
-        write_log("SaltySD Bootstrap: svcSetHeapSize failed with err %x\n", rc);
+        debug_log("SaltySD Bootstrap: svcSetHeapSize failed with err %x\n", rc);
     }
 
     g_heapAddr = addr;
@@ -137,7 +137,7 @@ Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 {
     Result ret = svcSetHeapSize(out, size+((elf_area_size+0x200000) & 0xffe00000));
     
-    //write_log("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+((elf_area_size+0x200000) & 0xffe00000));
+    //SaltySD_printf("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+((elf_area_size+0x200000) & 0xffe00000));
     
     if (!ret)
     {
@@ -151,7 +151,7 @@ Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
 {
     Result ret = svcGetInfo(out, id0, handle, id1);
     
-    //write_log("SaltySD Core: svcGetInfo intercept %p (%llx) %llx %x %llx ret %x\n", out, *out, id0, handle, id1, ret);
+    //SaltySD_printf("SaltySD Core: svcGetInfo intercept %p (%llx) %llx %x %llx ret %x\n", out, *out, id0, handle, id1, ret);
     
     if (id0 == 6 && id1 == 0 && handle == 0xffff8001)
     {
@@ -163,9 +163,10 @@ Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
 
 void SaltySDCore_PatchSVCs()
 {
-    u8 orig_1[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x00, 0x00, 0xD4};
-    u8 orig_2[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x05, 0x00, 0xD4};
-    u8 nop[0x4] = {0x1F, 0x20, 0x03, 0xD5};
+    Result ret;
+    const u8 orig_1[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x00, 0x00, 0xD4};
+    const u8 orig_2[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x05, 0x00, 0xD4};
+    const u8 nop[0x4] = {0x1F, 0x20, 0x03, 0xD5};
     u8 patch[0x10] = {0x44, 0x00, 0x00, 0x58, 0x80, 0x00, 0x1F, 0xD6, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x00};
     
     u64 code = SaltySDCore_getCodeStart();
@@ -174,31 +175,47 @@ void SaltySDCore_PatchSVCs()
     
     if (!dst_1 || !dst_2)
     {
-        write_log("SaltySD Core: Failed to find svcGetInfo and svcGetHeapSize! %llx, %llx\n", dst_1, dst_2);
+        SaltySD_printf("SaltySD Core: Failed to find svcGetInfo and svcGetHeapSize! %llx, %llx\n", dst_1, dst_2);
         return;
     }
 
     *(u64*)&patch[8] = svcSetHeapSizeIntercept;
     if (dst_1 & 4)
     {
-        SaltySD_Memcpy(dst_1, (u64)nop, 0x4);
-        SaltySD_Memcpy(dst_1+4, (u64)patch, 0x10);
+        ret = SaltySD_Memcpy(dst_1, (u64)nop, 0x4);
+        if (ret)
+        {
+            debug_log("svcSetHeapSize memcpy failed!\n");
+        }
+        else
+        {
+            ret = SaltySD_Memcpy(dst_1+4, (u64)patch, 0x10);
+        }
     }
     else
     {
-        SaltySD_Memcpy(dst_1, (u64)patch, 0x10);
+        ret = SaltySD_Memcpy(dst_1, (u64)patch, 0x10);
     }
+    if (ret) debug_log("svcSetHeapSize memcpy failed!\n");
     
     *(u64*)&patch[8] = svcGetInfoIntercept;
     if (dst_2 & 4)
     {
-        SaltySD_Memcpy(dst_2, (u64)nop, 0x4);
-        SaltySD_Memcpy(dst_2+4, (u64)patch, 0x10);
+        ret = SaltySD_Memcpy(dst_2, (u64)nop, 0x4);
+        if (ret)
+        {
+            debug_log("svcSetHeapSize memcpy failed!\n");
+        }
+        else
+        {
+            ret = SaltySD_Memcpy(dst_2+4, (u64)patch, 0x10);
+        }
     }
     else
     {
-        SaltySD_Memcpy(dst_2, (u64)patch, 0x10);
+        ret = SaltySD_Memcpy(dst_2, (u64)patch, 0x10);
     }
+    if (ret) debug_log("svcSetHeapSize memcpy failed!\n");
 }
 
 void SaltySDCore_LoadPlugins()
@@ -250,7 +267,7 @@ int main(int argc, char *argv[])
 {
     Result ret;
 
-    write_log("SaltySD Core: waddup\n");
+    debug_log("SaltySD Core: waddup\n");
 
     // Get our address space in order
     SaltySDCore_getCodeStart();
@@ -262,7 +279,7 @@ int main(int argc, char *argv[])
     
     SaltySD_Init();
 
-    write_log("SaltySD Core: restoring code...\n");
+    SaltySD_printf("SaltySD Core: restoring code...\n");
     ret = SaltySD_Restore();
     if (ret) goto fail;
     
@@ -278,7 +295,8 @@ int main(int argc, char *argv[])
     __libnx_exit(0);
 
 fail:
-    write_log("SaltySD Core: failed with retcode %x\n", ret);
+    debug_log("SaltySD Core: failed with retcode %x\n", ret);
+    SaltySD_printf("SaltySD Core: failed with retcode %x\n", ret);
     __libnx_exit(0);
 }
 
