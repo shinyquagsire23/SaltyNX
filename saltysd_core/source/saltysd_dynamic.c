@@ -82,6 +82,19 @@ uint64_t SaltySDCore_FindSymbol(char* name)
     return 0;
 }
 
+uint64_t SaltySDCore_FindSymbolBuiltin(char* name)
+{
+    if (!builtin_elfs) return 0;
+
+    for (int i = 0; i < num_builtin_elfs; i++)
+    {
+        uint64_t ptr = SaltySDCore_GetSymbolAddr(builtin_elfs[i], name);
+        if (ptr) return ptr;
+    }
+    
+    return 0;
+}
+
 void SaltySDCore_RegisterModule(void* base)
 {
     elfs = realloc(elfs, ++num_elfs * sizeof(void*));
@@ -149,7 +162,7 @@ void SaltySDCore_ReplaceModuleImport(void* base, char* name, void* new)
         SaltySD_printf("SaltySD Core: %x %s to %p, %llx %p\n", rela_idx, rel_name, new, rela->r_offset, base + rela->r_offset);
 
         Elf64_Rela replacement = *rela;
-        replacement.r_addend = rela->r_addend + (uint64_t)new - SaltySDCore_FindSymbol(rel_name);
+        replacement.r_addend = rela->r_addend + (uint64_t)new - SaltySDCore_FindSymbolBuiltin(rel_name);
 
         SaltySD_Memcpy(rela, &replacement, sizeof(Elf64_Rela));
     }
