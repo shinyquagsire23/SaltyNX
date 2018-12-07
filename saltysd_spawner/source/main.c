@@ -24,9 +24,11 @@ void __libnx_initheap(void)
 void __appInit(void)
 {
     Result ret;
+    
+    svcSleepThread(1*1000*1000*1000);
     smInitialize();
     
-    write_log("SaltySD Spawner: waiting for SD\n");
+    debug_log("SaltySD Spawner: waiting for SD\n");
     
     // Wait for SD card to be online
     for (int i = 0; i < 7; i++)
@@ -34,12 +36,12 @@ void __appInit(void)
         svcSleepThread(1*1000*1000*1000);
     }
     
-    write_log("SaltySD Spawner: getting SD\n");
+    debug_log("SaltySD Spawner: getting SD\n");
     
     fsInitialize();
     fsdevMountSdmc();
     
-    write_log("SaltySD Spawner: got SD card\n");
+    SaltySD_printf("SaltySD Spawner: got SD card\n");
 }
 
 void __appExit(void)
@@ -53,16 +55,16 @@ int main(int argc, char *argv[])
 {
     Result ret;
 
-    write_log("SaltySD Spawner Start\n");
+    SaltySD_printf("SaltySD Spawner Start\n");
     ret = load_elf(saltysd_proc_elf, saltysd_proc_elf_size);
     if (ret)
-        write_log("Spawner: ELF load failed with %x\n", ret);
+        SaltySD_printf("Spawner: ELF load failed with %x\n", ret);
 
     ret = ipc_handoffs();
     if (ret)
-        write_log("Spawner: IPC handoffs returned %x\n", ret);
+        SaltySD_printf("Spawner: IPC handoffs returned %x\n", ret);
 
-    write_log("Spawner: Goodbye.\n");
+    SaltySD_printf("Spawner: Goodbye.\n");
 
     return 0;
 }

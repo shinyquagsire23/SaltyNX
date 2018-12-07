@@ -97,10 +97,14 @@ Result handle_cmd(int cmd)
             char name[12];
             u32 reserved;
         } *resp = r.Raw;
+        
+        char name[12];
+        u64 pid = r.Pid;
+        memcpy(name, resp->name, 12);
 
-        write_log("Spawner: SaltySD (pid %x) asked for handle %s\n", r.Pid, resp->name);
+        SaltySD_printf("Spawner: SaltySD (pid %x) asked for handle %s\n", pid, name);
 
-        if (!strcmp(resp->name, "sdcard"))
+        if (!strcmp(name, "sdcard"))
         {
             Service toget;
             Handle sdcard;
@@ -113,13 +117,13 @@ Result handle_cmd(int cmd)
             if (!ret)
                 ipcSendHandleMove(&c, sdcard);
             else
-                write_log("Spawner: couldn't get SdCard handle, ret %x\n", ret);
+                SaltySD_printf("Spawner: couldn't get SdCard handle, ret %x\n", ret);
         }
         else
         {
             Service toget;
-            ret = smGetService(&toget, resp->name);
-            if (!ret && !strcmp(resp->name, "fsp-srv"))
+            ret = smGetService(&toget, name);
+            if (!ret && !strcmp(name, "fsp-srv"))
             {
                 ret = fsp_init(toget);
             }
@@ -127,7 +131,7 @@ Result handle_cmd(int cmd)
             if (!ret)
                 ipcSendHandleMove(&c, toget.handle);
             else
-                write_log("Spawner: couldn't get handle, ret %x\n", ret);
+                SaltySD_printf("Spawner: couldn't get handle, ret %x\n", ret);
         }
     }
     else if (cmd == 2)
@@ -172,7 +176,7 @@ void saltysd_test(Handle port)
     raw->magic = SFCI_MAGIC;
     raw->cmd_id = 0;
 
-    write_log("Spawner: sending SaltySD test\n");
+    SaltySD_printf("Spawner: sending SaltySD test\n");
     ret = ipcDispatch(port);
 
     if (R_SUCCEEDED(ret)) {
@@ -196,7 +200,6 @@ Result ipc_handoffs()
     Service fsp;
     
     ret = svcManageNamedPort(&port, "Spawner", 1);
-    //write_log("Spawner: svcManageNamedPort returned %x, handle %x\n", ret, port);
     
     while (1)
     {
@@ -204,12 +207,10 @@ Result ipc_handoffs()
         ret = svcAcceptSession(&session, port);
         if (ret && ret != 0xf201)
         {
-            //write_log("Spawner: svcAcceptSession returned %x\n", ret);
+            //SaltySD_printf("Spawner: svcAcceptSession returned %x\n", ret);
         }
         else if (!ret)
         {
-            //write_log("Spawner: session %x being handled\n", session);
-
             int handle_index;
             int reply_num = 0;
             Handle replySession = 0;
@@ -219,7 +220,6 @@ Result ipc_handoffs()
                 
                 if (should_terminate) break;
                 
-                //write_log("Spawner: IPC reply ret %x, index %x, sess %x\n", ret, handle_index, session);
                 if (ret) break;
                 
                 IpcParsedCommand r;

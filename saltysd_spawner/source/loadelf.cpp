@@ -98,7 +98,7 @@ Result load_elf(uint8_t* elf_data, u32 elf_size)
     // Create the process and map its memory for writing
     ret = svcCreateProcess(&proc, &procInfo, pcaps, 24);
     if (ret) return ret;
-    write_log("SaltySD Spawner: got handle %x for process\n", proc);
+    SaltySD_printf("SaltySD Spawner: got handle %x for process\n", proc);
     
     void* test = virtmemReserve(procInfo.codePages * 0x1000);
     ret = svcMapProcessMemory(test, proc, procInfo.codeAddr, procInfo.codePages * 0x1000);
