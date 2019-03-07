@@ -79,3 +79,18 @@ u64 SaltySDCore_findCode(u8* code, size_t size)
 
     return 0;
 }
+
+FILE* SaltySDCore_fopen(const char* filename, const char* mode)
+{
+    return fopen(filename, mode);
+}
+
+size_t SaltySDCore_fread(void* ptr, size_t size, size_t count, FILE* stream)
+{
+    return fread(ptr, size, count, stream);
+}
+
+int SaltySDCore_fclose(FILE* stream)
+{
+    return fclose(stream);
+}

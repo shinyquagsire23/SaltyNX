@@ -34,7 +34,7 @@ uint64_t SaltySDCore_GetSymbolAddr(void* base, char* name)
     uint64_t numsyms = 0;
     
     struct nso_header* header = (struct nso_header*)base;
-    struct mod0_header* modheader = (struct nso_header*)(base + header->mod);
+    struct mod0_header* modheader = (struct mod0_header*)(base + header->mod);
     dyn = (const Elf64_Dyn*)((void*)modheader + modheader->dynamic);
 
     for (; dyn->d_tag != DT_NULL; dyn++)
@@ -107,7 +107,7 @@ void SaltySDCore_RegisterBuiltinModule(void* base)
     builtin_elfs[num_builtin_elfs-1] = base;
 }
 
-void SaltySDCore_ReplaceModuleImport(void* base, char* name, void* new)
+void SaltySDCore_ReplaceModuleImport(void* base, char* name, void* newfunc)
 {
     const Elf64_Dyn* dyn = NULL;
     const Elf64_Rela* rela = NULL;
@@ -116,7 +116,7 @@ void SaltySDCore_ReplaceModuleImport(void* base, char* name, void* new)
     uint64_t relasz = 0;
     
     struct nso_header* header = (struct nso_header*)base;
-    struct mod0_header* modheader = (struct nso_header*)(base + header->mod);
+    struct mod0_header* modheader = (struct mod0_header*)(base + header->mod);
     dyn = (const Elf64_Dyn*)((void*)modheader + modheader->dynamic);
 
     for (; dyn->d_tag != DT_NULL; dyn++)
@@ -159,22 +159,22 @@ void SaltySDCore_ReplaceModuleImport(void* base, char* name, void* new)
         char* rel_name = strtab + symtab[sym_idx].st_name;
         if (strcmp(name, rel_name)) continue;
         
-        SaltySD_printf("SaltySD Core: %x %s to %p, %llx %p\n", rela_idx, rel_name, new, rela->r_offset, base + rela->r_offset);
+        SaltySD_printf("SaltySD Core: %x %s to %p, %llx %p\n", rela_idx, rel_name, newfunc, rela->r_offset, base + rela->r_offset);
 
         Elf64_Rela replacement = *rela;
-        replacement.r_addend = rela->r_addend + (uint64_t)new - SaltySDCore_FindSymbolBuiltin(rel_name);
+        replacement.r_addend = rela->r_addend + (uint64_t)newfunc - SaltySDCore_FindSymbolBuiltin(rel_name);
 
         SaltySD_Memcpy(rela, &replacement, sizeof(Elf64_Rela));
     }
 }
 
-void SaltySDCore_ReplaceImport(char* name, void* new)
+void SaltySDCore_ReplaceImport(char* name, void* newfunc)
 {
     if (!builtin_elfs) return 0;
 
     for (int i = 0; i < num_builtin_elfs; i++)
     {
-        SaltySDCore_ReplaceModuleImport(builtin_elfs[i], name, new);
+        SaltySDCore_ReplaceModuleImport(builtin_elfs[i], name, newfunc);
     }
 }
 
@@ -187,7 +187,7 @@ void SaltySDCore_DynamicLinkModule(void* base)
     uint64_t relasz = 0;
     
     struct nso_header* header = (struct nso_header*)base;
-    struct mod0_header* modheader = (struct nso_header*)(base + header->mod);
+    struct mod0_header* modheader = (struct mod0_header*)(base + header->mod);
     dyn = (const Elf64_Dyn*)((void*)modheader + modheader->dynamic);
 
     for (; dyn->d_tag != DT_NULL; dyn++)
