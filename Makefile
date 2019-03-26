@@ -14,17 +14,23 @@ all: saltysd_spawner/saltysd_spawner.kip saltysd_plugin_example/saltysd_plugin_e
 saltysd_spawner/saltysd_spawner.kip: saltysd_spawner/data/saltysd_proc.elf
 	@cd saltysd_spawner && make
 
-saltysd_spawner/data/saltysd_proc.elf: saltysd_proc/saltysd_proc.elf
+saltysd_spawner/data/saltysd_proc.elf: saltysd_proc/saltysd_proc.elf saltysd_spawner/data
 	@cp $< $@
+
+saltysd_spawner/data:
+	@mkdir $@
 
 saltysd_proc/saltysd_proc.elf: saltysd_proc/data/saltysd_bootstrap.elf saltysd_proc/data/saltysd_core.elf
 	@cd saltysd_proc && make
 
-saltysd_proc/data/saltysd_bootstrap.elf: saltysd_bootstrap/saltysd_bootstrap.elf
+saltysd_proc/data/saltysd_bootstrap.elf: saltysd_bootstrap/saltysd_bootstrap.elf saltysd_proc/data
 	@cp $< $@
 
-saltysd_proc/data/saltysd_core.elf: saltysd_core/saltysd_core.elf
+saltysd_proc/data/saltysd_core.elf: saltysd_core/saltysd_core.elf saltysd_proc/data
 	@cp $< $@
+
+saltysd_proc/data:
+	@mkdir $@
 
 saltysd_bootstrap/saltysd_bootstrap.elf:
 	@cd saltysd_bootstrap && make
