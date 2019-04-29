@@ -110,27 +110,27 @@ Result handleServiceCmd(int cmd)
             u64 magic;
             u64 command;
             u64 heap;
-            char name[32];
+            char name[64];
             u32 reserved[2];
         } *resp = r.Raw;
 
         Handle proc = r.Handles[0];
         u64 heap = resp->heap;
-        char name[32];
+        char name[64];
         
-        memcpy(name, resp->name, 32);
+        memcpy(name, resp->name, 64);
         
         SaltySD_printf("SaltySD: cmd 1 handler, proc handle %x, heap %llx, path %s\n", proc, heap, name);
         
-        char* path = malloc(64);
+        char* path = malloc(96);
         uint8_t* elf_data = NULL;
         u32 elf_size = 0;
 
-        snprintf(path, 64, "sdmc:/SaltySD/plugins/%s", name);
+        snprintf(path, 96, "sdmc:/SaltySD/plugins/%s", name);
         FILE* f = fopen(path, "rb");
         if (!f)
         {
-            snprintf(path, 64, "sdmc:/SaltySD/%s", name);
+            snprintf(path, 96, "sdmc:/SaltySD/%s", name);
             f = fopen(path, "rb");
         }
 

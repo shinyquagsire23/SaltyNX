@@ -132,7 +132,7 @@ Result SaltySD_LoadELF(u64 heap, u64* elf_addr, u64* elf_size, char* name)
         u64 magic;
         u64 cmd_id;
         u64 heap;
-        char name[32];
+        char name[64];
         u64 reserved[2];
     } *raw;
 
@@ -141,7 +141,7 @@ Result SaltySD_LoadELF(u64 heap, u64* elf_addr, u64* elf_size, char* name)
     raw->magic = SFCI_MAGIC;
     raw->cmd_id = 1;
     raw->heap = heap;
-    strncpy(raw->name, name, 31);
+    strncpy(raw->name, name, 63);
 
     ret = ipcDispatch(saltysd);
 

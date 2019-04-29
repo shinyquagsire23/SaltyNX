@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <dirent.h>
 #include <sys/iosupport.h>
 #include <sys/reent.h>
@@ -218,18 +219,17 @@ void SaltySDCore_PatchSVCs()
     if (ret) debug_log("svcSetHeapSize memcpy failed!\n");
 }
 
-void SaltySDCore_LoadPlugins()
+void** SaltySDCore_LoadPluginsInDir(char* path, void** entries, size_t* num_elfs)
 {
-    // Load plugin ELFs
-    void** tp = (void**)((u8*)armGetTls() + 0x1F8);
-    *tp = malloc(0x1000);
-    
-    void** entries = NULL;
-    size_t num_elfs = 0;
-    
+    char* tmp = malloc(0x80);
     DIR *d;
     struct dirent *dir;
-    d = opendir("sdmc:/SaltySD/plugins/");
+
+    SaltySD_printf("SaltySD Core: Searching plugin dir `%s'...\n", path);
+    
+    snprintf(tmp, 0x80, "sdmc:/SaltySD/plugins/%s", path);
+
+    d = opendir(tmp);
     if (d)
     {
         while ((dir = readdir(d)) != NULL)
@@ -239,18 +239,42 @@ void SaltySDCore_LoadPlugins()
             {
                 u64 elf_addr, elf_size;
                 setupELFHeap();
-                SaltySD_LoadELF(find_next_elf_heap(), &elf_addr, &elf_size, dir->d_name);
+                
+                snprintf(tmp, 0x80, "%s%s", path, dir->d_name);
+                SaltySD_LoadELF(find_next_elf_heap(), &elf_addr, &elf_size, tmp);
 
-                entries = realloc(entries, ++num_elfs * sizeof(void*));
-                entries[num_elfs-1] = (void*)elf_addr;
+                *num_elfs = *num_elfs + 1;
+                entries = realloc(entries, *num_elfs * sizeof(void*));
+                entries[*num_elfs-1] = (void*)elf_addr;
 
-                SaltySDCore_RegisterModule(entries[num_elfs-1]);
+                SaltySDCore_RegisterModule(entries[*num_elfs-1]);
                 
                 elf_area_size += elf_size;
             }
         }
         closedir(d);
     }
+    free(tmp);
+    
+    return entries;
+}
+
+void SaltySDCore_LoadPlugins()
+{
+    // Load plugin ELFs
+    void** tp = (void**)((u8*)armGetTls() + 0x1F8);
+    *tp = malloc(0x1000);
+    char* tmp = malloc(0x20);
+
+    void** entries = NULL;
+    size_t num_elfs = 0;
+
+    uint64_t tid = 0;
+    svcGetInfo(&tid, 18, CUR_PROCESS_HANDLE, 0);
+    
+    entries = SaltySDCore_LoadPluginsInDir("", entries, &num_elfs);
+    snprintf(tmp, 0x20, "%016" PRIx64 "/", tid);
+    entries = SaltySDCore_LoadPluginsInDir(tmp, entries, &num_elfs);
     
     for (int i = 0; i < num_elfs; i++)
     {
@@ -261,6 +285,7 @@ void SaltySDCore_LoadPlugins()
         free(entries);
     
     free(*tp);
+    free(tmp);
 }
 
 int main(int argc, char *argv[])
