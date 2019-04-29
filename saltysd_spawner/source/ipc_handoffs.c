@@ -109,8 +109,16 @@ Result handle_cmd(int cmd)
             Service toget;
             Handle sdcard;
             ret = smGetService(&toget, "fsp-srv");
+            if (ret)
+                SaltySD_printf("Spawner: couldn't get fsp-srv handle, ret %x\n", ret);
+            
             if (!ret)
+            {
                 ret = fsp_init(toget);
+                if (ret)
+                    SaltySD_printf("Spawner: couldn't init fsp, ret %x\n", ret);
+            }
+
             if (!ret)
                 ret = fsp_getSdCard(toget, &sdcard);
             
