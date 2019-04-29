@@ -9,7 +9,7 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/devkitA64/base_rules
 
-all: sdcard_out/SaltySD/saltysd_core.elf sdcard_out/SaltySD/saltysd_proc.elf sdcard_out/atmosphere/saltysd_spawner.kip saltysd_plugin_example/saltysd_plugin_example.elf
+all: sdcard_out/SaltySD/saltysd_core.elf sdcard_out/SaltySD/saltysd_proc.elf sdcard_out/atmosphere/kips/saltysd_spawner.kip saltysd_plugin_example/saltysd_plugin_example.elf
 
 saltysd_spawner/saltysd_spawner.kip:
 	@cd saltysd_spawner && make
@@ -38,8 +38,8 @@ sdcard_out/SaltySD/saltysd_proc.elf: saltysd_proc/saltysd_proc.elf
 	@mkdir -p sdcard_out/SaltySD/
 	@cp $< $@
 
-sdcard_out/atmosphere/saltysd_spawner.kip: saltysd_spawner/saltysd_spawner.kip
-	@mkdir -p sdcard_out/atmosphere/
+sdcard_out/atmosphere/kips/saltysd_spawner.kip: saltysd_spawner/saltysd_spawner.kip
+	@mkdir -p sdcard_out/atmosphere/kips/
 	@cp $< $@
 
 clean:
