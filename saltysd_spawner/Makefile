@@ -143,7 +143,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).pfs0 $(TARGET).nso $(TARGET).nro $(OUTPUT).kip $(TARGET).nsp $(TARGET).nacp $(TARGET).elf
+	@rm -fr $(BUILD) $(TARGET).pfs0 $(TARGET).nso $(TARGET).nro $(OUTPUT).kip $(TARGET).nsp $(TARGET).nacp $(TARGET).elf $(DATA)/*.elf
 
 
 #---------------------------------------------------------------------------------
