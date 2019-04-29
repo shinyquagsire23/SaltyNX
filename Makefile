@@ -27,6 +27,7 @@ saltysd_plugin_example/saltysd_plugin_example.elf:
 	@cd saltysd_plugin_example && make
 
 saltysd_proc/data/saltysd_bootstrap.elf: saltysd_bootstrap/saltysd_bootstrap.elf
+	@mkdir -p saltysd_proc/data/
 	@cp $< $@
 
 sdcard_out/SaltySD/saltysd_core.elf: saltysd_core/saltysd_core.elf
