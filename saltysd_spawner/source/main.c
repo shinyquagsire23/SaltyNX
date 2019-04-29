@@ -6,11 +6,10 @@
 #include "useful.h"
 #include "ipc_handoffs.h"
 #include "loadelf.h"
-#include "saltysd_proc_elf.h"
 
 u32 __nx_applet_type = AppletType_None;
 
-static char g_heap[0x20000];
+static char g_heap[0x10000];
 
 void __libnx_initheap(void)
 {
@@ -56,7 +55,7 @@ int main(int argc, char *argv[])
     Result ret;
 
     SaltySD_printf("SaltySD Spawner Start\n");
-    ret = load_elf(saltysd_proc_elf, saltysd_proc_elf_size);
+    ret = load_elf("sdmc:/SaltySD/saltysd_proc.elf");
     if (ret)
         SaltySD_printf("Spawner: ELF load failed with %x\n", ret);
 

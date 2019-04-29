@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-Result load_elf(uint8_t* elf, u32 elf_Size);
+Result load_elf(char* path);
 
 #ifdef __cplusplus
 }

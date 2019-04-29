@@ -38,61 +38,131 @@ namespace elf_parser {
 typedef struct {
     int section_index = 0; 
     std::intptr_t section_offset, section_addr;
-    std::string section_name;
+    //std::string section_name;
     std::string section_type; 
     int section_size, section_ent_size, section_addr_align;
 } section_t;
 
 typedef struct {
-    std::string segment_type, segment_flags;
+    std::string segment_type;
+    uint8_t segment_flags;
     long segment_offset, segment_virtaddr, segment_physaddr, segment_filesize, segment_memsize;
     int segment_align;
 } segment_t;
 
-typedef struct {
-    std::string symbol_index;
-    std::intptr_t symbol_value;
-    int symbol_num = 0, symbol_size = 0;
-    std::string symbol_type, symbol_bind, symbol_visibility, symbol_name, symbol_section;      
-} symbol_t;
-
-typedef struct {
-    std::intptr_t relocation_offset, relocation_info, relocation_symbol_value;
-    std::string   relocation_type, relocation_symbol_name, relocation_section_name;
-    std::intptr_t relocation_plt_address;
-} relocation_t;
-
-
 class Elf_parser {
-    public:        
-        Elf_parser(uint8_t* data): m_program_path(""), m_mmap_program(data) {}
+    public:
+             
+        Elf_parser(char* path)
+        {
+            Elf64_Shdr sh_strtab;
+            //char* sh_strtab_p;
+            
+            load_error = 0;
+            FILE* f = NULL;
+            fp = NULL;
+            
+            f = fopen(path, "rb");
+            if (!f)
+            {
+                load_error = 1;
+                return;
+            }
+            
+            fread(&ehdr, sizeof(ehdr), 1, f);
+            /*{
+                fclose(f);
+                
+                load_error = 2;
+                return;
+            }*/
+            
+            // Read symtab
+            /*fseek(f, ehdr.e_shoff + ehdr.e_shstrndx * sizeof(Elf64_Shdr), SEEK_SET);
+            fread(&sh_strtab, sizeof(sh_strtab), 1, f);
+            
+            sh_strtab_p = (char*)malloc(sh_strtab.sh_size);
+            fseek(f, sh_strtab.sh_offset, SEEK_SET);
+            fread(&sh_strtab_p, sh_strtab.sh_size, 1, f);*/
+
+            // Read sections
+            for (int i = 0; i < ehdr.e_shnum; ++i) {
+                Elf64_Shdr read;
+                fseek(f, ehdr.e_shoff + i * sizeof(Elf64_Shdr), SEEK_SET);
+                fread(&read, sizeof(read), 1, f);
+            
+                section_t section;
+                section.section_index= i;
+                //section.section_name = std::string(sh_strtab_p + read.sh_name);
+                section.section_type = get_section_type(read.sh_type);
+                section.section_addr = read.sh_addr;
+                section.section_offset = read.sh_offset;
+                section.section_size = read.sh_size;
+                section.section_ent_size = read.sh_entsize;
+                section.section_addr_align = read.sh_addralign; 
+                
+                sections.push_back(section);
+            }
+
+            // Read segments
+            for (int i = 0; i < ehdr.e_phnum; ++i) {
+                Elf64_Phdr read;
+                fseek(f, ehdr.e_phoff + i * sizeof(Elf64_Phdr), SEEK_SET);
+                fread(&read, sizeof(read), 1, f);
+                
+                segment_t segment;
+                segment.segment_type     = get_segment_type(read.p_type);
+                segment.segment_offset   = read.p_offset;
+                segment.segment_virtaddr = read.p_vaddr;
+                segment.segment_physaddr = read.p_paddr;
+                segment.segment_filesize = read.p_filesz;
+                segment.segment_memsize  = read.p_memsz;
+                segment.segment_flags    = get_segment_flags(read.p_flags);
+                segment.segment_align    = read.p_align;
+                
+                segments.push_back(segment);
+            }
+            
+            //free(sh_strtab_p);
+            fp = f;
+        }
         
-        std::vector<section_t> get_sections();
-        std::vector<segment_t> get_segments();
-        std::vector<symbol_t> get_symbols();
-        std::vector<relocation_t> get_relocations();
-        uint8_t *get_memory_map();
+        ~Elf_parser()
+        {
+            if (fp)
+            {
+                fclose(fp);
+                fp = NULL;
+            }
+            load_error = 3;
+        }
         
+        std::vector<section_t>& get_sections() { return sections; };
+        std::vector<segment_t>& get_segments() { return segments; };
+        int get_load_error() { return load_error; }
+        
+        size_t read_segment(segment_t& seg, void* dst)
+        {
+            fseek(fp, seg.segment_offset, SEEK_SET);
+            return fread(dst, seg.segment_filesize, 1, fp);
+        }
+        
+        FILE* get_file()
+        {
+            return fp;
+        }
+
     private:
-        void load_memory_map();
+        FILE* fp;
+        Elf64_Ehdr ehdr;
+        int load_error;
+        std::vector<section_t> sections;
+        std::vector<segment_t> segments;
 
         std::string get_section_type(int tt);
 
         std::string get_segment_type(uint32_t &seg_type);
-        std::string get_segment_flags(uint32_t &seg_flags);
-
-        std::string get_symbol_type(uint8_t &sym_type);
-        std::string get_symbol_bind(uint8_t &sym_bind);
-        std::string get_symbol_visibility(uint8_t &sym_vis);
-        std::string get_symbol_index(uint16_t &sym_idx);
-
-        std::string get_relocation_type(uint64_t &rela_type);
-        std::intptr_t get_rel_symbol_value(uint64_t &sym_idx, std::vector<symbol_t> &syms);
-        std::string get_rel_symbol_name(
-            uint64_t &sym_idx, std::vector<symbol_t> &syms);
-
-        std::string m_program_path; 
-        uint8_t *m_mmap_program;
+        uint8_t get_segment_flags(uint32_t &seg_flags);
 };
 
 }

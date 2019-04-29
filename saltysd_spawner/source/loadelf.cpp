@@ -29,6 +29,8 @@ struct ProcInfo
     u32 unused : 22;
     u32 resLimitHandle;
     u32 personalHeapNumPages;
+    
+    u8 padding[0x100];
 };
 
 u32 pcaps[24] =
@@ -59,13 +61,18 @@ u32 pcaps[24] =
     0xFFFFFFFF, 
 };
 
-Result load_elf(uint8_t* elf_data, u32 elf_size)
+Result load_elf(char* path)
 {
-    Result ret;
-    Handle proc;
-    struct ProcInfo procInfo;
-    
-    Elf_parser elf(elf_data);
+    Result ret = 0;
+    Handle proc = 0;
+    struct ProcInfo procInfo = {0};
+
+    Elf_parser elf(path);
+    if (elf.get_load_error())
+    {
+        SaltySD_printf("SaltySD Spawner: Failed to load ELF `%s'! Error %u\n", path, elf.get_load_error());
+        return -1;
+    }
     
     // Figure out our number of pages
     u64 min_vaddr = -1, max_vaddr = 0;
@@ -104,9 +111,9 @@ Result load_elf(uint8_t* elf_data, u32 elf_size)
     ret = svcMapProcessMemory(test, proc, procInfo.codeAddr, procInfo.codePages * 0x1000);
     if (ret) return ret;
 
-    for (auto seg : elf.get_segments())
+    for (auto& seg : elf.get_segments())
     {
-        memcpy(test +  seg.segment_virtaddr, &elf_data[seg.segment_offset], seg.segment_filesize);
+        elf.read_segment(seg, test + seg.segment_virtaddr);
     }
     
     ret = svcUnmapProcessMemory(test, proc, procInfo.codeAddr, procInfo.codePages * 0x1000);
@@ -115,24 +122,7 @@ Result load_elf(uint8_t* elf_data, u32 elf_size)
     // Adjust permissions and then launch
     for (auto seg : elf.get_segments())
     {
-        u8 perms = 0;
-        for (auto c : seg.segment_flags)
-        {
-            switch (c)
-            {
-                case 'R':
-                    perms |= Perm_R;
-                    break;
-                case 'W':
-                    perms |= Perm_W;
-                    break;
-                case 'E':
-                    perms |= Perm_X;
-                    break;
-            }
-        }
-
-        ret = svcSetProcessMemoryPermission(proc, procInfo.codeAddr + seg.segment_virtaddr, seg.segment_memsize + 0xFFF & ~0xFFF, perms);
+        ret = svcSetProcessMemoryPermission(proc, procInfo.codeAddr + seg.segment_virtaddr, seg.segment_memsize + 0xFFF & ~0xFFF, seg.segment_flags);
     }
     
     ret = svcStartProcess(proc, 49, 3, 0x10000);

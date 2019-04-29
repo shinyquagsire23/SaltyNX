@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <switch/kernel/ipc.h>
 #include "saltysd_bootstrap_elf.h"
-#include "saltysd_core_elf.h"
 
 #include "spawner_ipc.h"
 
@@ -135,11 +134,11 @@ Result handleServiceCmd(int cmd)
             f = fopen(path, "rb");
         }
 
-        if (!f && !strcmp(name, "saltysd_core.elf"))
+        if (!f)
         {
-            SaltySD_printf("SaltySD: loading builtin %s\n", name);
-            elf_data = saltysd_core_elf;
-            elf_size = saltysd_core_elf_size;
+            SaltySD_printf("SaltySD: failed to load plugin `%s'!\n", name);
+            elf_data = NULL;
+            elf_size = 0;
         }
         else if (f)
         {
@@ -165,7 +164,8 @@ Result handleServiceCmd(int cmd)
         
         if (f)
         {
-            free(elf_data);
+            if (elf_data)
+                free(elf_data);
             fclose(f);
         }
         
