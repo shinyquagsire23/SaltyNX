@@ -31,8 +31,22 @@ size_t elf_area_size = 0x80000;
 
 struct _reent reent;
 
-static struct _reent* __get_reent(void) {
-    return _impure_ptr;
+// This structure is exactly 0x20 bytes
+typedef struct 
+{
+    u32 magic;
+    Handle thread_handle;
+    void* thread_ptr;
+    struct _reent* reent;
+    void* tls_tp;
+} ThreadVars_mine;
+
+ThreadVars_mine vars_orig;
+ThreadVars_mine vars_mine;
+
+static inline ThreadVars_mine* getThreadVars_mine(void) 
+{
+    return (ThreadVars_mine*)((u8*)armGetTls() + 0x200 - sizeof(ThreadVars_mine));
 }
 
 void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
@@ -42,11 +56,18 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
 
     fake_heap_start = &g_heap[0];
     fake_heap_end   = &g_heap[sizeof g_heap];
-    
-    __syscalls.getreent = __get_reent;
-    
+
     orig_ctx = ctx;
     orig_main_thread = main_thread;
+    
+    // Hacky TLS stuff, TODO: just stop using libnx t b h
+    vars_mine.magic = 0x21545624;
+    vars_mine.thread_handle = main_thread;
+    vars_mine.thread_ptr = NULL;
+    vars_mine.reent = _impure_ptr;
+    vars_mine.tls_tp = malloc(0x1000);
+    vars_orig = *getThreadVars_mine();
+    *getThreadVars_mine() = vars_mine;
     
     // Call constructors.
     void __libc_init_array(void);
@@ -60,6 +81,9 @@ void __attribute__((weak)) NORETURN __libnx_exit(int rc)
     // Call destructors.
     void __libc_fini_array(void);
     __libc_fini_array();
+    
+    // Restore TLS stuff
+    *getThreadVars_mine() = vars_orig;
     
     u64 addr = SaltySDCore_getCodeStart();
 
@@ -262,8 +286,6 @@ void** SaltySDCore_LoadPluginsInDir(char* path, void** entries, size_t* num_elfs
 void SaltySDCore_LoadPlugins()
 {
     // Load plugin ELFs
-    void** tp = (void**)((u8*)armGetTls() + 0x1F8);
-    *tp = malloc(0x1000);
     char* tmp = malloc(0x20);
 
     void** entries = NULL;
@@ -284,7 +306,6 @@ void SaltySDCore_LoadPlugins()
     if (num_elfs)
         free(entries);
     
-    free(*tp);
     free(tmp);
 }
 
