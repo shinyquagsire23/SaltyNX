@@ -1,7 +1,7 @@
 #ifndef SALTYSD_CORE_H
 #define SALTYSD_CORE_H
 
-#include <switch.h>
+#include <switch_min.h>
 
 #include "useful.h"
 

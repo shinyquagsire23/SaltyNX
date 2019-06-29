@@ -11,7 +11,7 @@
 	.cfi_endproc
 .endm
 
-SVC_BEGIN svcQueryProcessMemory
+SVC_BEGIN svcQueryProcessMemory_
 	str x1, [sp, #-16]!
 	svc 0x76
 	ldr x2, [sp], #16

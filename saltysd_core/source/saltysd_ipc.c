@@ -1,6 +1,6 @@
 #include "saltysd_ipc.h"
 
-#include <switch.h>
+#include <switch_min.h>
 #include <stdarg.h>
 
 #include "saltysd_core.h"

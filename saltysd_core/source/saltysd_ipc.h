@@ -1,7 +1,7 @@
 #ifndef SALTYSD_IPC_H
 #define SALTYSD_IPC_H
 
-#include <switch.h>
+#include <switch_min.h>
 
 #include "useful.h"
 

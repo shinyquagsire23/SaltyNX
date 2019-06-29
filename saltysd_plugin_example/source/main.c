@@ -1,11 +1,11 @@
-#include <switch.h>
+#include <switch_min.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <dirent.h>
 #include <sys/iosupport.h>
 #include <sys/reent.h>
-#include <switch/kernel/ipc.h>
+#include <switch_min/kernel/ipc.h>
 
 #include "useful.h"
 #include "crc32.h"

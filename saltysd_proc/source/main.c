@@ -84,8 +84,6 @@ void hijack_pid(u64 pid)
     free(tids);
 }
 
-Result svcQueryProcessMemory(MemoryInfo* meminfo_ptr, u32* pageinfo, Handle debug, u64 addr);
-
 Result handleServiceCmd(int cmd)
 {
     Result ret = 0;

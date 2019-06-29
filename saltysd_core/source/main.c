@@ -1,4 +1,4 @@
-#include <switch.h>
+#include <switch_min.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -6,7 +6,8 @@
 #include <dirent.h>
 #include <sys/iosupport.h>
 #include <sys/reent.h>
-#include <switch/kernel/ipc.h>
+#include <switch_min/kernel/ipc.h>
+#include <switch_min/runtime/threadvars.h>
 
 #include "useful.h"
 #include "saltysd_ipc.h"
@@ -29,25 +30,8 @@ void* orig_ctx;
 Handle sdcard;
 size_t elf_area_size = 0x80000;
 
-struct _reent reent;
-
-// This structure is exactly 0x20 bytes
-typedef struct 
-{
-    u32 magic;
-    Handle thread_handle;
-    void* thread_ptr;
-    struct _reent* reent;
-    void* tls_tp;
-} ThreadVars_mine;
-
-ThreadVars_mine vars_orig;
-ThreadVars_mine vars_mine;
-
-static inline ThreadVars_mine* getThreadVars_mine(void) 
-{
-    return (ThreadVars_mine*)((u8*)armGetTls() + 0x200 - sizeof(ThreadVars_mine));
-}
+ThreadVars vars_orig;
+ThreadVars vars_mine;
 
 void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
 {
@@ -62,12 +46,12 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
     
     // Hacky TLS stuff, TODO: just stop using libnx t b h
     vars_mine.magic = 0x21545624;
-    vars_mine.thread_handle = main_thread;
+    vars_mine.handle = main_thread;
     vars_mine.thread_ptr = NULL;
     vars_mine.reent = _impure_ptr;
     vars_mine.tls_tp = malloc(0x1000);
-    vars_orig = *getThreadVars_mine();
-    *getThreadVars_mine() = vars_mine;
+    vars_orig = *getThreadVars();
+    *getThreadVars() = vars_mine;
     
     // Call constructors.
     void __libc_init_array(void);
@@ -83,7 +67,7 @@ void __attribute__((weak)) NORETURN __libnx_exit(int rc)
     __libc_fini_array();
     
     // Restore TLS stuff
-    *getThreadVars_mine() = vars_orig;
+    *getThreadVars() = vars_orig;
     
     u64 addr = SaltySDCore_getCodeStart();
 

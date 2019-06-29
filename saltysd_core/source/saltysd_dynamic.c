@@ -1,6 +1,6 @@
 #include <elf.h>
 
-#include <switch.h>
+#include <switch_min.h>
 #include <elf.h>
 
 #include "useful.h"
