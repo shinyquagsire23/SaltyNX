@@ -65,7 +65,7 @@ void hijack_pid(u64 pid)
     
     if (already_hijacking)
     {
-        SaltySD_printf("SaltySD: PID %llx spawned before last hijack finished bootstrapping! Ignoring...\n");
+        SaltySD_printf("SaltySD: PID %llx spawned before last hijack finished bootstrapping! Ignoring...\n", pid);
         return;
     }
     
