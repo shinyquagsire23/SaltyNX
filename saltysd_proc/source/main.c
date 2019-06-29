@@ -18,6 +18,7 @@ void serviceThread(void* buf);
 Handle saltyport, sdcard;
 static char g_heap[0x100000];
 bool should_terminate = false;
+bool already_hijacking = false;
 
 void __libnx_initheap(void)
 {
@@ -61,6 +62,14 @@ void hijack_pid(u64 pid)
     Result ret;
     u32 threads;
     Handle debug;
+    
+    if (already_hijacking)
+    {
+        SaltySD_printf("SaltySD: PID %llx spawned before last hijack finished bootstrapping! Ignoring...\n");
+        return;
+    }
+    
+    already_hijacking = true;
     svcDebugActiveProcess(&debug, pid);
 
     u64* tids = malloc(0x200 * sizeof(u64));
@@ -205,7 +214,9 @@ Result handleServiceCmd(int cmd)
         {
             ret = restore_elf_debug(debug);
         }
-
+        
+        // Bootstrapping is done, we can handle another process now.
+        already_hijacking = false;
         svcCloseHandle(debug);
     }
     else if (cmd == 3) // Memcpy
