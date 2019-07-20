@@ -118,11 +118,12 @@ void hijack_pid(u64 pid)
             SaltySD_printf("         name %s\n", eventinfo.name);
             SaltySD_printf("         mmuflags %08x exception %016llx\n", eventinfo.mmuFlags, eventinfo.userExceptionContextAddr);
 
-            if (eventinfo.tid < 0x010000000000FFFF)
+            if (eventinfo.tid <= 0x010000000000FFFF)
             {
                 SaltySD_printf("SaltySD: TID %016llx is a system application, aborting bootstrap...\n", eventinfo.tid);
                 free(tids);
                 
+                already_hijacking = false;
                 svcCloseHandle(debug);
                 return;
             }
