@@ -6,6 +6,7 @@
 #pragma once
 #include "../types.h"
 #include "../arm/thread_context.h"
+#include "svc_extra.h"
 
 /// Pseudo handle for the current process.
 #define CUR_PROCESS_HANDLE 0xFFFF8001
@@ -921,7 +922,7 @@ Result svcTerminateDebugProcess(Handle debug);
  * @note Syscall number 0x63.
  * @warning This is a privileged syscall. Use \ref envIsSyscallHinted to check if it is available.
  */
-Result svcGetDebugEvent(u8* event_out, Handle debug);
+Result svcGetDebugEvent(DebugEventInfo* event_out, Handle debug);
 
 /**
  * @brief Continues a debugging session.

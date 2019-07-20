@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <switch_min/kernel/svc_extra.h>
 #include <switch/kernel/ipc.h>
 #include "saltysd_bootstrap_elf.h"
 
@@ -87,6 +88,39 @@ void hijack_pid(u64 pid)
     oldContext = context;
 
     SaltySD_printf("SaltySD: new max %llx, %x %016llx\n", pid, threads, context.pc.x);
+
+    DebugEventInfo eventinfo;
+    while (1)
+    {
+        ret = svcGetDebugEventInfo((u8*)&eventinfo, debug);
+        if (ret)
+        {
+            SaltySD_printf("SaltySD: svcGetDebugEventInfo returned %x, breaking\n", ret);
+            break;
+        }
+
+        if (eventinfo.type == DebugEvent_AttachProcess)
+        {
+            SaltySD_printf("SaltySD: found AttachProcess event:\n");
+            SaltySD_printf("         tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
+            SaltySD_printf("         name %s\n", eventinfo.name);
+            SaltySD_printf("         mmuflags %08x exception %016llx\n", eventinfo.mmuFlags, eventinfo.userExceptionContextAddr);
+
+            if (eventinfo.tid < 0x010000000000FFFF)
+            {
+                SaltySD_printf("SaltySD: TID %016llx is a system application, aborting bootstrap...\n");
+                free(tids);
+                
+                svcCloseHandle(debug);
+                return;
+            }
+        }
+        else
+        {
+            SaltySD_printf("SaltySD: debug event %x, passing...\n", eventinfo.type);
+            continue;
+        }
+    }
 
     hijack_bootstrap(&debug, pid, tids[0]);
     
