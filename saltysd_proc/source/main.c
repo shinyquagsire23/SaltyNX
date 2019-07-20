@@ -1,5 +1,6 @@
 #include <switch.h>
 
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <switch_min/kernel/svc_extra.h>
@@ -8,6 +9,7 @@
 
 #include "spawner_ipc.h"
 
+#include "loadelf.h"
 #include "useful.h"
 
 #define MODULE_SALTYSD 420
@@ -41,6 +43,13 @@ void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
     Result ret;
     
     ret = svcGetDebugThreadContext(&context, *debug, tid, RegisterGroup_All);
+    if (ret)
+    {
+        SaltySD_printf("SaltySD: svcGetDebugThreadContext returned %x, aborting...\n", ret);
+        
+        svcCloseHandle(*debug);
+        return;
+    }
     
     // Load in the ELF
     //svcReadDebugProcessMemory(backup, debug, context.pc.x, 0x1000);
@@ -54,6 +63,10 @@ void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
     // Set new PC
     context.pc.x = new_start;
     ret = svcSetDebugThreadContext(*debug, tid, &context, RegisterGroup_All);
+    if (ret)
+    {
+        SaltySD_printf("SaltySD: svcSetDebugThreadContext returned %x!\n", ret);
+    }
      
     svcCloseHandle(*debug);
 }
@@ -83,16 +96,15 @@ void hijack_pid(u64 pid)
     }
     while (!threads);
     
-    ThreadContext context, oldContext;
+    ThreadContext context;
     ret = svcGetDebugThreadContext(&context, debug, tids[0], RegisterGroup_All);
-    oldContext = context;
 
-    SaltySD_printf("SaltySD: new max %llx, %x %016llx\n", pid, threads, context.pc.x);
+    SaltySD_printf("SaltySD: new max %lx, %x %016lx\n", pid, threads, context.pc.x);
 
     DebugEventInfo eventinfo;
     while (1)
     {
-        ret = svcGetDebugEventInfo((u8*)&eventinfo, debug);
+        ret = svcGetDebugEventInfo(&eventinfo, debug);
         if (ret)
         {
             SaltySD_printf("SaltySD: svcGetDebugEventInfo returned %x, breaking\n", ret);
@@ -108,7 +120,7 @@ void hijack_pid(u64 pid)
 
             if (eventinfo.tid < 0x010000000000FFFF)
             {
-                SaltySD_printf("SaltySD: TID %016llx is a system application, aborting bootstrap...\n");
+                SaltySD_printf("SaltySD: TID %016llx is a system application, aborting bootstrap...\n", eventinfo.tid);
                 free(tids);
                 
                 svcCloseHandle(debug);
@@ -144,7 +156,7 @@ Result handleServiceCmd(int cmd)
     }
     else if (cmd == 1) // LoadELF
     {
-        IpcParsedCommand r;
+        IpcParsedCommand r = {0};
         ipcParse(&r);
 
         struct {
@@ -225,13 +237,13 @@ Result handleServiceCmd(int cmd)
         raw->new_addr = new_start;
         raw->new_size = new_size;
         
-        debug_log("SaltySD: new_addr to %llx, %x\n", new_start, ret);
+        debug_log("SaltySD: new_addr to %lx, %x\n", new_start, ret);
 
         return 0;
     }
     else if (cmd == 2) // RestoreBootstrapCode
     {
-        IpcParsedCommand r;
+        IpcParsedCommand r = {0};
         ipcParse(&r);
 
         struct {
@@ -255,7 +267,7 @@ Result handleServiceCmd(int cmd)
     }
     else if (cmd == 3) // Memcpy
     {
-        IpcParsedCommand r;
+        IpcParsedCommand r = {0};
         ipcParse(&r);
 
         struct {
@@ -310,7 +322,7 @@ Result handleServiceCmd(int cmd)
     }
     else if (cmd == 5) // Log
     {
-        IpcParsedCommand r;
+        IpcParsedCommand r = {0};
         ipcParse(&r);
 
         struct {
@@ -362,7 +374,6 @@ void serviceThread(void* buf)
             //SaltySD_printf("SaltySD: session %x being handled\n", session);
 
             int handle_index;
-            int reply_num = 0;
             Handle replySession = 0;
             while (1)
             {
