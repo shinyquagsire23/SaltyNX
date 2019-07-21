@@ -18,7 +18,13 @@ typedef struct {
             u64 tid;
             u64 pid;
             char name[12];
-            u32 mmuFlags;
+            u32 isA64 : 1;
+            u32 addrSpace : 3;
+            u32 enableDebug : 1;
+            u32 enableAslr : 1;
+            u32 useSysMemBlocks : 1;
+            u32 poolPartition : 4;
+            u32 unused : 22;
             u64 userExceptionContextAddr;
         };
         
@@ -54,6 +60,7 @@ typedef enum {
     DebugEvent_Exception=4,     ///< Exception
 } DebugEvent;
 
+#ifndef LIBNX_NO_EXTRA_ADAPT
 /**
  * @brief Gets an incoming debug event from a debugging session.
  * @return Result code.
@@ -64,3 +71,4 @@ inline Result svcGetDebugEventInfo(DebugEventInfo* event_out, Handle debug)
 {
     return svcGetDebugEvent((u8*)event_out, debug);
 }
+#endif

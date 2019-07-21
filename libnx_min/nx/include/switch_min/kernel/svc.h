@@ -6,6 +6,8 @@
 #pragma once
 #include "../types.h"
 #include "../arm/thread_context.h"
+
+#define LIBNX_NO_EXTRA_ADAPT
 #include "svc_extra.h"
 
 /// Pseudo handle for the current process.

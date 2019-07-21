@@ -116,16 +116,20 @@ void hijack_pid(u64 pid)
             SaltySD_printf("SaltySD: found AttachProcess event:\n");
             SaltySD_printf("         tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
             SaltySD_printf("         name %s\n", eventinfo.name);
-            SaltySD_printf("         mmuflags %08x exception %016llx\n", eventinfo.mmuFlags, eventinfo.userExceptionContextAddr);
+            SaltySD_printf("         isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
+            SaltySD_printf("         enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
+            SaltySD_printf("         exception %016llx\n", eventinfo.userExceptionContextAddr);
+
+            if (!eventinfo.isA64)
+            {
+                SaltySD_printf("SaltySD: ARM32 applications are not supported, aborting bootstrap...\n");
+                goto abort_bootstrap;
+            }
 
             if (eventinfo.tid <= 0x010000000000FFFF)
             {
                 SaltySD_printf("SaltySD: TID %016llx is a system application, aborting bootstrap...\n", eventinfo.tid);
-                free(tids);
-                
-                already_hijacking = false;
-                svcCloseHandle(debug);
-                return;
+                goto abort_bootstrap;
             }
         }
         else
@@ -138,6 +142,13 @@ void hijack_pid(u64 pid)
     hijack_bootstrap(&debug, pid, tids[0]);
     
     free(tids);
+    return;
+
+abort_bootstrap:
+    free(tids);
+                
+    already_hijacking = false;
+    svcCloseHandle(debug);
 }
 
 Result handleServiceCmd(int cmd)
