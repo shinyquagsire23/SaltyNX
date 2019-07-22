@@ -108,6 +108,9 @@ void hijack_pid(u64 pid)
         if (ret)
         {
             SaltySD_printf("SaltySD: svcGetDebugEventInfo returned %x, breaking\n", ret);
+            // Invalid Handle
+            if (ret == 0xe401)
+                goto abort_bootstrap;
             break;
         }
 

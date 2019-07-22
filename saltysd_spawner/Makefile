@@ -16,6 +16,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 # DATA is a list of directories containing data files
 # INCLUDES is a list of directories containing header files
 # EXEFS_SRC is the optional input directory containing data copied into exefs, if anything this normally should only contain "main.npdm".
+# ROMFS is the directory containing data to be added to RomFS, relative to the Makefile (Optional)
 #
 # NO_ICON: if set to anything, do not use icon.
 # NO_NACP: if set to anything, no .nacp file is generated.
@@ -29,23 +30,23 @@ include $(DEVKITPRO)/libnx/switch_rules
 #     - icon.jpg
 #     - <libnx folder>/default_icon.jpg
 #---------------------------------------------------------------------------------
-TARGET		:=	saltysd_spawner
+TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include source
 EXEFS_SRC	:=	exefs_src
+#ROMFS	:=	romfs
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:=	-g -Wall -O2 \
-			-ffast-math \
+CFLAGS	:=	-g -Wall -O2 -ffunction-sections -ffast-math \
 			$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE) -DSWITCH
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSWITCH
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
@@ -106,6 +107,19 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 export BUILD_EXEFS_SRC := $(TOPDIR)/$(EXEFS_SRC)
 
+ifeq ($(strip $(CONFIG_JSON)),)
+	jsons := $(wildcard *.json)
+	ifneq (,$(findstring $(TARGET).json,$(jsons)))
+		export APP_JSON := $(TOPDIR)/$(TARGET).json
+	else
+		ifneq (,$(findstring config.json,$(jsons)))
+			export APP_JSON := $(TOPDIR)/config.json
+		endif
+	endif
+else
+	export APP_JSON := $(TOPDIR)/$(CONFIG_JSON)
+endif
+
 ifeq ($(strip $(ICON)),)
 	icons := $(wildcard *.jpg)
 	ifneq (,$(findstring $(TARGET).jpg,$(icons)))
@@ -131,6 +145,10 @@ ifneq ($(APP_TITLEID),)
 	export NACPFLAGS += --titleid=$(APP_TITLEID)
 endif
 
+ifneq ($(ROMFS),)
+	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
+endif
+
 .PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
@@ -143,7 +161,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).pfs0 $(TARGET).nso $(TARGET).nro $(OUTPUT).kip $(TARGET).nsp $(TARGET).nacp $(TARGET).elf $(DATA)/*.elf
+	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).pfs0 $(TARGET).nso $(TARGET).nro $(OUTPUT).kip $(TARGET).nsp $(TARGET).nacp $(TARGET).elf $(DATA)/*.elf
 
 
 #---------------------------------------------------------------------------------
@@ -155,15 +173,17 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).kip
+all	:	$(OUTPUT).pfs0 $(OUTPUT).nsp $(OUTPUT).nro
 
 $(OUTPUT).pfs0	:	$(OUTPUT).nso
 
-$(OUTPUT).nso	:	$(OUTPUT).elf
+ifeq ($(strip $(APP_JSON)),)
+$(OUTPUT).nsp	:	$(OUTPUT).nso
+else
+$(OUTPUT).nsp	:	$(OUTPUT).nso $(OUTPUT).npdm
+endif
 
-$(OUTPUT).kip	:	$(OUTPUT).elf
-	@elf2kip $< $(OUTPUT).json $@
-	@echo built ... $(notdir $@)
+$(OUTPUT).nso	:	$(OUTPUT).elf
 
 ifeq ($(strip $(NO_NACP)),)
 $(OUTPUT).nro	:	$(OUTPUT).elf $(OUTPUT).nacp
@@ -176,7 +196,7 @@ $(OUTPUT).elf	:	$(OFILES)
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
-%.bin.o	:	%.bin
+%.bin.o	%_bin.h :	%.bin
 %.elf.o	:	%.elf
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)

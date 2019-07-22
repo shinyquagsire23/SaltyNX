@@ -9,12 +9,12 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/devkitA64/base_rules
 
-all: libnx_min/nx/lib/libnx_min.a sdcard_out/SaltySD/saltysd_core.elf sdcard_out/SaltySD/saltysd_proc.elf sdcard_out/atmosphere/kips/saltysd_spawner.kip saltysd_plugin_example/saltysd_plugin_example.elf
+all: libnx_min/nx/lib/libnx_min.a sdcard_out/SaltySD/saltysd_core.elf sdcard_out/SaltySD/saltysd_proc.elf sdcard_out/atmosphere/titles/0100000000534C56/exefs.nsp saltysd_plugin_example/saltysd_plugin_example.elf
 
 libnx_min/nx/lib/libnx_min.a:
 	@cd libnx_min && make
 
-saltysd_spawner/saltysd_spawner.kip:
+saltysd_spawner/saltysd_spawner.nsp:
 	@cd saltysd_spawner && make
 
 saltysd_proc/saltysd_proc.elf: saltysd_proc/data/saltysd_bootstrap.elf
@@ -41,9 +41,10 @@ sdcard_out/SaltySD/saltysd_proc.elf: saltysd_proc/saltysd_proc.elf
 	@mkdir -p sdcard_out/SaltySD/
 	@cp $< $@
 
-sdcard_out/atmosphere/kips/saltysd_spawner.kip: saltysd_spawner/saltysd_spawner.kip
-	@mkdir -p sdcard_out/atmosphere/kips/
+sdcard_out/atmosphere/titles/0100000000534C56/exefs.nsp: saltysd_spawner/saltysd_spawner.nsp
+	@mkdir -p sdcard_out/atmosphere/titles/0100000000534C56/flags
 	@cp $< $@
+	@touch sdcard_out/atmosphere/titles/0100000000534C56/flags/boot2.flag
 
 clean:
 	@rm -f saltysd_proc/data/*
