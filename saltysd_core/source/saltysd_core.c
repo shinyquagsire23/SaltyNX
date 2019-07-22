@@ -1,6 +1,7 @@
 #include "saltysd_core.h"
 
 #include "bm.h"
+#include <errno.h>
 
 extern void _start();
 u64 code_start = 0;
@@ -93,4 +94,41 @@ size_t SaltySDCore_fread(void* ptr, size_t size, size_t count, FILE* stream)
 int SaltySDCore_fclose(FILE* stream)
 {
     return fclose(stream);
+}
+
+int SaltySDCore_fseek(FILE* stream, int64_t offset, int origin)
+{
+    int ret = fseek(stream, offset, origin);
+    if (ret)
+        return errno;
+    
+    return 0;
+}
+
+long int SaltySDCore_ftell(FILE* stream) {
+    return ftell(stream);
+}
+
+int SaltySDCore_remove(const char* filename) {
+    return remove(filename);
+}
+
+size_t SaltySDCore_fwrite(const void* ptr, size_t size, size_t count, FILE* stream) 
+{
+    return fwrite(ptr, size, count, stream);
+}
+
+DIR* SaltySDCore_opendir(const char* dirname)
+{
+    return opendir(dirname);
+}
+
+struct dirent* SaltySDCore_readdir(DIR* dirp)
+{
+    return readdir(dirp);
+}
+
+int SaltySDCore_closedir(DIR *dirp) 
+{
+    return closedir(dirp);
 }
