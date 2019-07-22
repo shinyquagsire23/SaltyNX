@@ -173,7 +173,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT).pfs0 $(OUTPUT).nsp $(OUTPUT).nro
+all	:	$(OUTPUT).pfs0 $(OUTPUT).nsp $(OUTPUT).nro $(OUTPUT).kip
 
 $(OUTPUT).pfs0	:	$(OUTPUT).nso
 
@@ -192,6 +192,10 @@ $(OUTPUT).nro	:	$(OUTPUT).elf
 endif
 
 $(OUTPUT).elf	:	$(OFILES)
+
+$(OUTPUT).kip	:	$(OUTPUT).elf
+	@elf2kip $< $(OUTPUT).json $@
+	@echo built ... $(notdir $@)
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
