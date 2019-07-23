@@ -161,7 +161,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).pfs0 $(TARGET).nso $(TARGET).nro $(OUTPUT).kip $(TARGET).nsp $(TARGET).nacp $(TARGET).elf $(DATA)/*.elf
+	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).npdm $(TARGET).pfs0 $(TARGET).nso $(TARGET).nro $(OUTPUT).kip $(TARGET).nsp $(TARGET).nacp $(TARGET).elf $(DATA)/*.elf
 
 
 #---------------------------------------------------------------------------------
