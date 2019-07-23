@@ -34,6 +34,7 @@ typedef struct {
 
 Result hidsysInitialize(void);
 void hidsysExit(void);
+Service* hidsysGetServiceSession(void);
 
 Result hidsysEnableAppletToGetInput(bool enable);
 
@@ -71,3 +72,9 @@ Result hidsysGetUniquePadIds(u64 *UniquePadIds, size_t count, size_t *total_entr
  */
 Result hidsysSetNotificationLedPattern(const HidsysNotificationLedPattern *pattern, u64 UniquePadId);
 
+/**
+ * @brief Gets the unique pad's serial number.
+ * @param UniquePadId UniquePadId for the controller.
+ * @param serial Pointer to output the serial to. (The buffer size needs to be at least 0x19 bytes)
+ */
+Result hidsysGetUniquePadSerialNumber(u64 UniquePadId, char *serial);

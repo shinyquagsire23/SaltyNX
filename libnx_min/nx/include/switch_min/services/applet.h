@@ -9,9 +9,11 @@
 #include "../types.h"
 #include "../services/sm.h"
 #include "../services/apm.h"
+#include "../services/pdm.h"
 #include "../kernel/tmem.h"
 #include "../kernel/event.h"
 
+/// AppletType
 typedef enum {
     AppletType_None = -2,
     AppletType_Default = -1,
@@ -22,6 +24,7 @@ typedef enum {
     AppletType_SystemApplication = 4,
 } AppletType;
 
+/// OperationMode
 typedef enum {
     AppletOperationMode_Handheld = 0,
     AppletOperationMode_Docked = 1,
@@ -29,20 +32,36 @@ typedef enum {
 
 /// applet hook types.
 typedef enum {
-    AppletHookType_OnFocusState = 0,  ///< FocusState changed.
-    AppletHookType_OnOperationMode,   ///< OperationMode changed.
-    AppletHookType_OnPerformanceMode, ///< PerformanceMode changed.
-    AppletHookType_OnExitRequest,     ///< Exit requested.
+    AppletHookType_OnFocusState = 0,                    ///< ::AppletNotificationMessage_FocusStateChanged
+    AppletHookType_OnOperationMode,                     ///< ::AppletNotificationMessage_OperationModeChanged
+    AppletHookType_OnPerformanceMode,                   ///< ::AppletNotificationMessage_PerformanceModeChanged
+    AppletHookType_OnExitRequest,                       ///< ::AppletNotificationMessage_ExitRequested
+    AppletHookType_OnRestart,                           ///< ::AppletNotificationMessage_Restart
+    AppletHookType_OnCaptureButtonShortPressed,         ///< ::AppletNotificationMessage_CaptureButtonShortPressed
+    AppletHookType_OnAlbumImageTaken,                   ///< ::AppletNotificationMessage_AlbumImageTaken
 
-    AppletHookType_Max,               ///< Number of applet hook types.
+    AppletHookType_Max,                                 ///< Number of applet hook types.
 } AppletHookType;
 
+/// NotificationMessage, for \ref appletGetMessage. See also \ref AppletHookType.
+typedef enum {
+    AppletNotificationMessage_ExitRequested             = 0x4,    ///< Exit requested.
+    AppletNotificationMessage_FocusStateChanged         = 0xF,    ///< FocusState changed.
+    AppletNotificationMessage_Restart                   = 0x10,   ///< Current applet execution was resumed.
+    AppletNotificationMessage_OperationModeChanged      = 0x1E,   ///< OperationMode changed.
+    AppletNotificationMessage_PerformanceModeChanged    = 0x1F,   ///< PerformanceMode changed.
+    AppletNotificationMessage_CaptureButtonShortPressed = 0x5A,   ///< Capture button was short-pressed.
+    AppletNotificationMessage_AlbumImageTaken           = 0x5C,   ///< Screenshot was taken.
+} AppletNotificationMessage;
+
+/// FocusState
 typedef enum {
     AppletFocusState_Focused = 1,                   ///< Applet is focused.
     AppletFocusState_NotFocusedLibraryApplet = 2,   ///< Out of focus - LibraryApplet open.
     AppletFocusState_NotFocusedHomeSleep = 3        ///< Out of focus - HOME menu open / console is sleeping.
 } AppletFocusState;
 
+/// FocusHandlingMode
 typedef enum {
   AppletFocusHandlingMode_SuspendHomeSleep = 0,       ///< Suspend only when HOME menu is open / console is sleeping (default).
   AppletFocusHandlingMode_NoSuspend,                  ///< Don't suspend when out of focus.
@@ -52,12 +71,14 @@ typedef enum {
   AppletFocusHandlingMode_Max,                        ///< Number of focus handling modes.
 } AppletFocusHandlingMode;
 
+/// LaunchParameterKind
 typedef enum {
     AppletLaunchParameterKind_Application     = 1, ///< Application-specific LaunchParameter
     AppletLaunchParameterKind_PreselectedUser = 2, ///< account PreselectedUser
     AppletLaunchParameterKind_Unknown         = 3, ///< Unknown if used by anything?
 } AppletLaunchParameterKind;
 
+/// AppletId
 typedef enum {
     AppletId_overlayDisp = 0x02,    ///< 010000000000100C "overlayDisp"
     AppletId_qlaunch = 0x03,        ///< 0100000000001000 "qlaunch" (SystemAppletMenu)
@@ -105,6 +126,13 @@ typedef enum {
     AppletThemeColorType_Unknown3 = 3,
 } AppletThemeColorType;
 
+/// Permission values for \ref appletSetScreenShotPermission.
+typedef enum {
+    AppletScreenShotPermission_Inherit = 0,        ///< Inherit from parent applet.
+    AppletScreenShotPermission_Enable  = 1,        ///< Enable.
+    AppletScreenShotPermission_Disable = 2,        ///< Disable.
+} AppletScreenShotPermission;
+
 /// applet hook function.
 typedef void (*AppletHookFn)(AppletHookType hook, void* param);
 
@@ -135,28 +163,29 @@ typedef struct {
     LibAppletExitReason exitreason;    ///< Set by \ref appletHolderJoin using the output from cmd GetResult, see \ref LibAppletExitReason.
 } AppletHolder;
 
-/// 'pdm' ApplicationPlayStatistics
-typedef struct {
-    u8 unk_x0[0x8];
-} AppletApplicationPlayStatistics;
-
 /// Attributes for launching applications for Quest.
 typedef struct {
-    u32 unk_x0;
-    u32 unk_x4;
+    u32 unk_x0;                        ///< See AppletApplicationAttribute::unk_x0.
+    u32 unk_x4;                        ///< See AppletApplicationAttribute::unk_x4.
+    float volume;                      ///< [7.0.0+] See AppletApplicationAttribute::volume.
 } AppletApplicationAttributeForQuest;
+
+/// ApplicationAttribute
+typedef struct {
+    u32 unk_x0;                        ///< Default is 0 for non-Quest. Only used when non-zero: unknown value in seconds.
+    u32 unk_x4;                        ///< Default is 0 for non-Quest. Only used when non-zero: unknown value in seconds.
+    float volume;                      ///< Audio volume. Must be in the range of 0.0f-1.0f. The default is 1.0f.
+    u8 unused[0x14];                   ///< Unused. Default is 0.
+} AppletApplicationAttribute;
 
 /// Initialize applet, called automatically during app startup.
 Result appletInitialize(void);
 
-/// Exit applet, called automatically during app startup.
+/// Exit applet, called automatically during app exit.
 void appletExit(void);
 
 Result appletGetAppletResourceUserId(u64 *out);
 AppletType appletGetAppletType(void);
-
-void appletNotifyRunning(u8 *out);
-Result appletCreateManagedDisplayLayer(u64 *out);
 
 /// Sets the state field for \ref AppletThemeColorType.
 void appletSetThemeColorType(AppletThemeColorType theme);
@@ -184,6 +213,7 @@ Result appletRequestLaunchApplication(u64 titleID, AppletStorage* s);
 /**
  * @brief Requests to launch the specified application, for kiosk systems.
  * @note Only available with AppletType_*Application on 3.0.0+.
+ * @note Identical to \ref appletRequestLaunchApplication, except this allows the user to specify the attribute fields instead of the defaults being used.
  * @param[in] titleID Application titleID
  * @param s Optional AppletStorage object, can be NULL. This is automatically closed. When NULL on pre-4.0.0, this will internally create a tmp storage with size 0 for use with the cmd. This is the storage available to the launched application via \ref appletPopLaunchParameter with ::AppletLaunchParameterKind_Application.
  * @param[in] attr Kiosk application attributes.
@@ -194,6 +224,48 @@ Result appletGetDesiredLanguage(u64 *LanguageCode);
 
 /// Only available with AppletType_*Application.
 Result appletSetTerminateResult(Result res);
+
+/**
+ * @brief Gets the DisplayVersion for the current host title control.nacp.
+ * @note Only available with AppletType_*Application.
+ * @param[out] displayVersion Output DisplayVersion string, must be at least 0x10-bytes. This is always NUL-terminated.
+ */
+Result appletGetDisplayVersion(char *displayVersion);
+
+/**
+ * @brief Blocks the usage of the home button, for short (Home Menu) and long (Overlay) presses.
+ * @note Only available with AppletType_*Application.
+ * @param val Unknown. Official sw only uses hard-coded value 0 for this.
+ */
+Result appletBeginBlockingHomeButtonShortAndLongPressed(s64 val);
+
+/**
+ * @brief Ends the blocking started by \ref appletBeginBlockingHomeButtonShortAndLongPressed.
+ * @note Only available with AppletType_*Application.
+ */
+Result appletEndBlockingHomeButtonShortAndLongPressed(void);
+
+/**
+ * @brief Blocks the usage of the home button, for short presses (Home Menu).
+ * @note Only available with AppletType_*Application.
+ * @param val Unknown nanoseconds. Value 0 can be used.
+ */
+Result appletBeginBlockingHomeButton(s64 val);
+
+/**
+ * @brief Ends the blocking started by \ref appletBeginBlockingHomeButton.
+ * @note Only available with AppletType_*Application.
+ */
+Result appletEndBlockingHomeButton(void);
+
+void appletNotifyRunning(u8 *out);
+
+/**
+ * @brief Gets the PseudoDeviceId. This is derived from the output of a ns command, and from data in the host title control.nacp.
+ * @note Only available with AppletType_*Application on 2.0.0+.
+ * @param[out] out Output PseudoDeviceId.
+ */
+Result appletGetPseudoDeviceId(u128 *out);
 
 /// Set media playback state.
 /// If state is set to true, screen dimming and auto sleep is disabled.
@@ -211,28 +283,79 @@ Result appletSetGamePlayRecordingState(bool state);
 /// Initializes video recording. This allocates a 0x6000000-byte buffer for the TransferMemory, cleanup is handled automatically during app exit in \ref appletExit.
 /// Only available with AppletType_Application on 3.0.0+, hence errors from this can be ignored.
 /// Video recording is only fully available system-side with 4.0.0+.
-/// Only usable when running under a title which supports video recording.
+/// Only usable when running under a title which supports video recording. Using this is only needed when the host title control.nacp has VideoCaptureMode set to Enabled, with Automatic appletInitializeGamePlayRecording is not needed.
 Result appletInitializeGamePlayRecording(void);
 
 /**
- * @brief Blocks the usage of the home button.
- * @param val Unknown nanoseconds. Value 0 can be used.
- * @note Can only be used in regularapps.
+ * @brief Requests a system shutdown.
+ * @note Only available with AppletType_*Application on 3.0.0+.
  */
-Result appletBeginBlockingHomeButton(s64 val);
+Result appletRequestToShutdown(void);
 
-Result appletEndBlockingHomeButton(void);
+/**
+ * @brief Requests a system reboot.
+ * @note Only available with AppletType_*Application on 3.0.0+.
+ */
+Result appletRequestToReboot(void);
+
+/**
+ * @brief Initializes the ApplicationCopyrightFrameBuffer, with dimensions 1280x720 + the tmem for it. This is used as an overlay for screenshots.
+ * @note Only available with AppletType_*Application on 5.0.0+.
+ * @note Cleanup for this is handled automatically during app exit in \ref appletExit.
+ */
+Result appletInitializeApplicationCopyrightFrameBuffer(void);
+
+/**
+ * @brief Sets the RGBA8 image for use with \ref appletInitializeApplicationCopyrightFrameBuffer. Overrides the current image, if this was already used previously.
+ * @note Only available with AppletType_*Application on 5.0.0+.
+ * @note The specified coordinates and width/height must be within the bounds of the framebuffer setup by \ref appletInitializeApplicationCopyrightFrameBuffer.
+ * @param[in] buffer Input image buffer.
+ * @param[in] size Input image buffer size.
+ * @param[in] x X coordinate. Must not be negative.
+ * @param[in] y Y coordinate. Must not be negative.
+ * @param[in] width Image width. Must be >=1.
+ * @param[in] height Image height. Must be >=1.
+ * @param[in] mode WindowOriginMode. Should be at least 1.
+ */
+Result appletSetApplicationCopyrightImage(const void* buffer, size_t size, s32 x, s32 y, s32 width, s32 height, s32 mode);
+
+/**
+ * @brief Sets the visibility for the image set by \ref appletSetApplicationCopyrightImage, in screenshots.
+ * @note Only available with AppletType_*Application on 5.0.0+.
+ * @param[in] visible Whether the image is visible. The default is true.
+ */
+Result appletSetApplicationCopyrightVisibility(bool visible);
 
 /**
  * @brief Gets ApplicationPlayStatistics.
  * @note Only available with AppletType_*Application on 5.0.0+.
- * @note This may return no output in some cases.
- * @param stats Output \ref AppletApplicationPlayStatistics array.
+ * @note The input titleIDs must be allowed via control.nacp with the current host title. The minimum allowed titleID is the titleID for the current-process.
+ * @param stats Output \ref PdmApplicationPlayStatistics array.
  * @param titleIDs Input titleIDs array.
  * @param count Total entries in the input/output arrays.
- * @param out Output s32.
+ * @param total_out Total output entries.
  */
-Result appletQueryApplicationPlayStatistics(AppletApplicationPlayStatistics *stats, const u64 *titleIDs, s32 count, s32 *out);
+Result appletQueryApplicationPlayStatistics(PdmApplicationPlayStatistics *stats, const u64 *titleIDs, s32 count, s32 *total_out);
+
+/**
+ * @brief Same as \ref appletQueryApplicationPlayStatistics except this gets playstats specific to the input userID.
+ * @note Only available with AppletType_*Application on 6.0.0+.
+ * @param userID userID
+ * @param stats Output \ref PdmApplicationPlayStatistics array.
+ * @param titleIDs Input titleIDs array.
+ * @param count Total entries in the input/output arrays.
+ * @param total_out Total output entries.
+ */
+Result appletQueryApplicationPlayStatisticsByUid(u128 userID, PdmApplicationPlayStatistics *stats, const u64 *titleIDs, s32 count, s32 *total_out);
+
+/**
+ * @brief Gets an Event which is signaled for GpuErrorDetected.
+ * @note Only available with AppletType_*Application on [8.0.0+].
+ * @note The Event must be closed by the user once finished with it.
+ * @note Official sw waits on this Event from a seperate thread, triggering an abort when it's signaled.
+ * @param[out] event_out Output Event with autoclear=false.
+ */
+Result appletGetGpuErrorDetectedSystemEvent(Event *out_event);
 
 /**
  * @brief Delay exiting until \ref appletUnlockExit is called, with a 15 second timeout once exit is requested.
@@ -246,12 +369,42 @@ Result appletLockExit(void);
 Result appletUnlockExit(void);
 
 /**
- * @brief Controls whether screenshot-capture is allowed.
- * @param val 0 = disable, 1 = enable.
+ * @brief Enter FatalSection.
  */
-Result appletSetScreenShotPermission(s32 val);
+Result appletEnterFatalSection(void);
 
-Result appletSetScreenShotImageOrientation(s32 val);
+/**
+ * @brief Leave FatalSection.
+ */
+Result appletLeaveFatalSection(void);
+
+/**
+ * @brief Controls whether screenshot-capture is allowed.
+ * @param permission \ref AppletScreenShotPermission
+ */
+Result appletSetScreenShotPermission(AppletScreenShotPermission permission);
+
+/**
+ * @brief Sets whether ::AppletNotificationMessage_Restart is enabled.
+ * @param[in] flag Whether to enable the notification.
+ */
+Result appletSetRestartMessageEnabled(bool flag);
+
+/**
+ * @brief Sets whether ::AppletNotificationMessage_CaptureButtonShortPressed is enabled.
+ * @note Only available with [3.0.0+].
+ * @note When enabled with a non-Overlay applet, Overlay applet will not be notified of capture button short-presses for screenshots.
+ * @param[in] flag Whether to enable the notification.
+ */
+Result appletSetRequiresCaptureButtonShortPressedMessage(bool flag);
+
+/**
+ * @brief Sets the Album screenshot ImageOrientation.
+ * @param[in] val Input value.
+ */
+Result appletSetAlbumImageOrientation(s32 val);
+
+Result appletCreateManagedDisplayLayer(u64 *out);
 
 /**
  * @brief Gets the current Illuminance from the light sensor.
@@ -259,6 +412,13 @@ Result appletSetScreenShotImageOrientation(s32 val);
  * @param fLux Output fLux
  */
 Result appletGetCurrentIlluminance(float *fLux);
+
+/**
+ * @brief Gets whether Illuminance is available.
+ * @note Only available with [3.0.0+].
+ * @param out Output flag
+ */
+Result appletIsIlluminanceAvailable(bool *out);
 
 /**
  * @brief Gets the current Illuminance from the light sensor. Same as \ref appletGetCurrentIlluminance except for the additional param.
@@ -269,11 +429,19 @@ Result appletGetCurrentIlluminance(float *fLux);
 Result appletGetCurrentIlluminanceEx(bool *bOverLimit, float *fLux);
 
 /**
- * @brief Gets whether Illuminance is available.
- * @note Only available with [3.0.0+].
- * @param out Output flag
+ * @brief Sets whether ::AppletNotificationMessage_AlbumImageTaken is enabled.
+ * @note Only available with [7.0.0+].
+ * @param[in] flag Whether to enable the notification.
  */
-Result appletIsIlluminanceAvailable(bool *out);
+Result appletSetAlbumImageTakenNotificationEnabled(bool flag);
+
+/**
+ * @brief Sets the Application AlbumUserData.
+ * @note Only available with [8.0.0+].
+ * @param[in] buffer Buffer containing arbitrary UserData.
+ * @param[in] size Buffer size, must be <=0x400.
+ */
+Result appletSetApplicationAlbumUserData(const void* buffer, size_t size);
 
 /**
  * @brief Stops forwarding the input to the foreground app, works only in the Overlay applet context.
