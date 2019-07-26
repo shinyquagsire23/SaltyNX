@@ -21,6 +21,7 @@ extern int64_t SaltySDCore_ftell(FILE* stream) LINKABLE;
 extern int SaltySDCore_remove(const char* filename) LINKABLE;
 extern size_t SaltySDCore_fwrite(const void* ptr, size_t size, size_t count, FILE* stream) LINKABLE;
 extern DIR* SaltySDCore_opendir(const char* dirname) LINKABLE;
+extern int SaltySDCore_mkdir(const char* dirname, mode_t mode) LINKABLE;
 extern struct dirent* SaltySDCore_readdir(DIR* dirp) LINKABLE;
 extern int SaltySDCore_closedir(DIR *dirp) LINKABLE;
 

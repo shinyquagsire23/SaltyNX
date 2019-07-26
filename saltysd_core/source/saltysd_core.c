@@ -123,6 +123,11 @@ DIR* SaltySDCore_opendir(const char* dirname)
     return opendir(dirname);
 }
 
+int SaltySDCore_mkdir(const char* dirname, mode_t mode)
+{
+    return mkdir(dirname, mode);
+}
+
 struct dirent* SaltySDCore_readdir(DIR* dirp)
 {
     return readdir(dirp);
