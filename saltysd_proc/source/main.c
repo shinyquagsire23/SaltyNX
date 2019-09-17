@@ -76,12 +76,11 @@ void hijack_pid(u64 pid)
     Result ret;
     u32 threads;
     Handle debug;
-	FILE *disabled = fopen("sdmc:/SaltySD/flags/disable.flag", "r");
+	FILE* disabled = fopen("sdmc:/SaltySD/flags/disable.flag", "r");
+	u8 disable = 1;
 	
-	if (disabled) {
-		SaltySD_printf("SaltySD: disable.flag detected. Aborting...\n", pid);
-		fclose(disabled);
-		goto abort_bootstrap;
+	if (disabled == NULL) {
+		disable = 0;
 	}
 	fclose(disabled);
     
@@ -172,7 +171,11 @@ void hijack_pid(u64 pid)
 				}
 			fclose(except);
 			}
-        }
+			if (disable == 1) {
+				SaltySD_printf("SaltySD: Detected disable.flag, aborting bootstrap...\n");
+				goto abort_bootstrap;
+			}
+		}
         else
         {
             SaltySD_printf("SaltySD: debug event %x, passing...\n", eventinfo.type);
@@ -192,6 +195,7 @@ void hijack_pid(u64 pid)
     return;
 
 abort_bootstrap:
+	disable = 0;
     free(tids);
                 
     already_hijacking = false;
