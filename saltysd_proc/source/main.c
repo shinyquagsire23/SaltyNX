@@ -164,9 +164,9 @@ void hijack_pid(u64 pid)
 						goto abort_bootstrap;
 					}
 					else {
-						thesame == 0;
+						thesame = 0;
 						thesame2 = 0;
-						thesame3 == 0;
+						thesame3 = 0;
 					}	
 					char exceptions = "";
 				}
