@@ -95,13 +95,7 @@ void hijack_pid(u64 pid)
 
     u64* tids = malloc(0x200 * sizeof(u64));
 
-    // Poll for new threads (svcStartProcess) while stuck in debug
-    do
-    {
-        ret = svcGetThreadList(&threads, tids, 0x200, debug);
-        svcSleepThread(-1);
-    }
-    while (!threads);
+    svcGetThreadList(&threads, tids, 0x200, debug);
     
     ThreadContext context;
     ret = svcGetDebugThreadContext(&context, debug, tids[0], RegisterGroup_All);
@@ -109,7 +103,7 @@ void hijack_pid(u64 pid)
     SaltySD_printf("SaltySD: new max %lx, %x %016lx\n", pid, threads, context.pc.x);
 
 	char exceptions[18];
-	char line[64];
+	char line[18];
 	char titleidnum[16];
 	char titleidnumn[17];
 	char titleidnumrn[18];
@@ -179,6 +173,13 @@ void hijack_pid(u64 pid)
             continue;
         }
     }
+	// Poll for new threads (svcStartProcess) while stuck in debug
+    do
+    {
+        ret = svcGetThreadList(&threads, tids, 0x200, debug);
+        svcSleepThread(-1);
+    }
+    while (!threads);
     hijack_bootstrap(&debug, pid, tids[0]);
     
     free(tids);
