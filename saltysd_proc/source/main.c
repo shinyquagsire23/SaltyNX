@@ -76,13 +76,14 @@ void hijack_pid(u64 pid)
     Result ret;
     u32 threads;
     Handle debug;
-	FILE* disabled = fopen("sdmc:/SaltySD/flags/disable.flag", "r");
+	FILE *disabled = fopen("sdmc:/SaltySD/flags/disable.flag", "r");
 	
 	if (disabled) {
 		SaltySD_printf("SaltySD: disable.flag detected. Aborting...\n", pid);
 		fclose(disabled);
 		goto abort_bootstrap;
 	}
+	fclose(disabled);
     
     if (already_hijacking)
     {
@@ -95,7 +96,12 @@ void hijack_pid(u64 pid)
 
     u64* tids = malloc(0x200 * sizeof(u64));
 
-    svcGetThreadList(&threads, tids, 0x200, debug);
+    do
+    {
+        ret = svcGetThreadList(&threads, tids, 0x200, debug);
+        svcSleepThread(-1);
+    }
+    while (!tids);
     
     ThreadContext context;
     ret = svcGetDebugThreadContext(&context, debug, tids[0], RegisterGroup_All);
