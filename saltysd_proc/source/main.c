@@ -76,6 +76,13 @@ void hijack_pid(u64 pid)
     Result ret;
     u32 threads;
     Handle debug;
+	FILE* disabled = fopen("sdmc:/SaltySD/flags/disable.flag", "r");
+	
+	if (disabled) {
+		SaltySD_printf("SaltySD: disable.flag detected. Aborting...\n", pid);
+		fclose(disabled);
+		goto abort_bootstrap;
+	}
     
     if (already_hijacking)
     {
@@ -101,6 +108,12 @@ void hijack_pid(u64 pid)
 
     SaltySD_printf("SaltySD: new max %lx, %x %016lx\n", pid, threads, context.pc.x);
 
+	char exceptions[18];
+	char line[64];
+	char titleidnum[16];
+	char titleidnumn[17];
+	char titleidnumrn[18];
+	
     DebugEventInfo eventinfo;
     while (1)
     {
@@ -122,6 +135,10 @@ void hijack_pid(u64 pid)
             SaltySD_printf("         isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
             SaltySD_printf("         enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
             SaltySD_printf("         exception %016llx\n", eventinfo.userExceptionContextAddr);
+			snprintf(titleidnum, sizeof titleidnum, "%016llx", eventinfo.tid);
+			snprintf(titleidnumn, sizeof titleidnumn, "%016llx\n", eventinfo.tid);
+			snprintf(titleidnumrn, sizeof titleidnumrn, "%016llx\r\n", eventinfo.tid);
+			
 
             if (!eventinfo.isA64)
             {
@@ -134,6 +151,27 @@ void hijack_pid(u64 pid)
                 SaltySD_printf("SaltySD: TID %016llx is a system application, aborting bootstrap...\n", eventinfo.tid);
                 goto abort_bootstrap;
             }
+			FILE* except = fopen("sdmc:/SaltySD/exceptions.txt", "r");
+			if (except) {
+				while (fgets(line, sizeof(line), except)) {
+					snprintf(exceptions, sizeof exceptions, "%s", line); 
+					int thesame =  strcasecmp(exceptions, titleidnum);
+					int thesame2 = strcasecmp(exceptions, titleidnumn);
+					int thesame3 = strcasecmp(exceptions, titleidnumrn);
+					if ((thesame == 0) || (thesame2 == 0) || (thesame3 == 0)) {
+						SaltySD_printf("SaltySD: TID %016llx is in exceptions.txt, aborting bootstrap...\n", eventinfo.tid);
+						fclose(except);
+						goto abort_bootstrap;
+					}
+					else {
+						thesame == 0;
+						thesame2 = 0;
+						thesame3 == 0;
+					}	
+					char exceptions = "";
+				}
+			fclose(except);
+			}
         }
         else
         {
@@ -141,7 +179,6 @@ void hijack_pid(u64 pid)
             continue;
         }
     }
-
     hijack_bootstrap(&debug, pid, tids[0]);
     
     free(tids);
