@@ -1,4 +1,4 @@
-#include <switch.h>
+#include <switch_min.h>
 
 #include <string.h>
 #include <stdio.h>

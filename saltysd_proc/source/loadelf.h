@@ -1,7 +1,7 @@
 #ifndef IPC_HANDOFFS_H
 #define IPC_HANDOFFS_H
 
-#include <switch.h>
+#include <switch_min.h>
 
 #ifdef __cplusplus
 extern "C" {

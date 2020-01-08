@@ -1,10 +1,10 @@
-#include <switch.h>
+#include <switch_min.h>
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <switch_min/kernel/svc_extra.h>
-#include <switch/kernel/ipc.h>
+#include <switch_min/kernel/ipc.h>
 #include "saltysd_bootstrap_elf.h"
 
 #include "spawner_ipc.h"

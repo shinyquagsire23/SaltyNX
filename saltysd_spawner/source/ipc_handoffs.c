@@ -1,6 +1,6 @@
 #include "ipc_handoffs.h"
 
-#include <switch/kernel/ipc.h>
+#include <switch_min/kernel/ipc.h>
 
 #include "useful.h"
 
