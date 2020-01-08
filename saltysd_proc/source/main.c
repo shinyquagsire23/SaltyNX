@@ -18,7 +18,7 @@ u32 __nx_applet_type = AppletType_None;
 
 void serviceThread(void* buf);
 
-Handle saltyport, sdcard;
+Handle saltyport, sdcard, injectserv;
 static char g_heap[0x100000];
 bool should_terminate = false;
 bool already_hijacking = false;
@@ -502,6 +502,7 @@ int main(int argc, char *argv[])
     // Start our port
     // For some reason, we only have one session maximum (0 reslimit handle related?)    
     ret = svcManageNamedPort(&saltyport, "SaltySD", 1);
+	svcManageNamedPort(&injectserv, "InjectServ", 1);
 
     // Main service loop
     u64* pids = malloc(0x200 * sizeof(u64));
@@ -531,6 +532,11 @@ int main(int argc, char *argv[])
         {
             serviceThread(NULL);
         }
+		if (!svcWaitSynchronizationSingle(injectserv, 1000)) {
+			Handle sesja;
+			svcAcceptSession(&sesja, injectserv);
+			svcCloseHandle(sesja);
+		}
 
         svcSleepThread(1000*1000);
     }
