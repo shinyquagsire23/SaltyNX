@@ -2,7 +2,10 @@
 Background process for the Nintendo Switch for file/code modification
 
 Created by: https://github.com/shinyquagsire23
+
 This fork includes many QoL improvements
+
+---
 
 For additional functions you need SaltyNX-Tool (if you are using ReverseNX-Tool, it has all functions already integrated)
 
