@@ -1,10 +1,11 @@
 ;GRID: Autosport
-;1.4.0RC9 crashes, 1.4.1_45339 stucks in infinite loop
-;0100DC800A602000
+;1.4.0RC9 and 1.5_46790 crashes, 1.4.1_45339 stucks in infinite loop
+0100DC800A602000
 
 ;Darksiders II Deathnitive Edition
-;1.0.0 makes game double speed
+;1.0.0 has double speed gameplay
 010071800BA98000
 
-;sys-ftpd
-420000000000000E
+;Luigi's Mansion 3
+;1.0.0, 1.1.0, 1.2.1 won't boot
+0100DCA0064A6000
