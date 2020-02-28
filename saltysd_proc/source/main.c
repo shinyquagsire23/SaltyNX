@@ -129,11 +129,11 @@ void hijack_pid(u64 pid)
 		if (eventinfo.type == DebugEvent_AttachProcess)
 		{
 			SaltySD_printf("SaltySD: found AttachProcess event:\n");
-			SaltySD_printf("		 tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
-			SaltySD_printf("		 name %s\n", eventinfo.name);
-			SaltySD_printf("		 isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
-			SaltySD_printf("		 enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
-			SaltySD_printf("		 exception %016llx\n", eventinfo.userExceptionContextAddr);
+			SaltySD_printf("         tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
+			SaltySD_printf("         name %s\n", eventinfo.name);
+			SaltySD_printf("         isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
+			SaltySD_printf("         enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
+			SaltySD_printf("         exception %016llx\n", eventinfo.userExceptionContextAddr);
 			snprintf(titleidnum, sizeof titleidnum, "%016llx", eventinfo.tid);
 			snprintf(titleidnumn, sizeof titleidnumn, "%016llx\n", eventinfo.tid);
 			snprintf(titleidnumrn, sizeof titleidnumrn, "%016llx\r\n", eventinfo.tid);
