@@ -1,8 +1,14 @@
 # SaltyNX
 Background process for the Nintendo Switch for file/code modification
 
+For additional functions you need SaltyNX-Tool (if you are using ReverseNX-Tool, it Has all functions already integrated)
+
+https://github.com/masagrator/SaltyNX-Tool
+
 Tests were done on FW 7.0.1-9.1.0, Atmosphere 0.9.1-0.9.4, 0.10.1-0.10.2
+
 It should work with ReinX too.
+
 SX OS older than 2.9 are not working (no technical support for all SX OS versions). Tested only on sysNAND 9.0.0, 2.9.2
 
 Clean Kosmos crashes SaltyNX because of too much sysmodules. You need to delete some (f.e. emuiibo, because it crashes SaltyNX on it's own). It's recommended to use Kosmos v14.0.1 at least.
