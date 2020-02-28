@@ -1,5 +1,7 @@
 # SaltyNX
 Background process for the Nintendo Switch for file/code modification
+Created by: https://github.com/shinyquagsire23
+This fork includes many QoL improvements
 
 For additional functions you need SaltyNX-Tool (if you are using ReverseNX-Tool, it has all functions already integrated)
 
@@ -55,5 +57,3 @@ List of not compatible games:
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
 
 "Heap related" games are added to excpetions.txt which is treated as Black list, 32-bit games are ignored by default
-
-Original author of SaltyNX: https://github.com/shinyquagsire23
