@@ -17,7 +17,7 @@ Known issues:
 - Instability with some homebrews and sysmodules,
 - You need to have at least Hekate 5.0.2 if you don't want issues related to Hekate (if you use KIP rememeber to add to hekate_ipl.ini under your config line
 ```
-kip1=atmosphere/kips/
+kip1=atmosphere/kips/*
 ```
 - 32 bit games are unsupported,
 - Crashes OS if you use Atmosphere cheat engine and you have in titles folder of game you want to boot cheats. For avoiding this read "How to use cheats" in SaltyNX-Tool repo's readme,
