@@ -14,7 +14,6 @@ SX OS older than 2.9 are not working (no technical support for all SX OS version
 Clean Kosmos crashes SaltyNX because of too much sysmodules. You need to delete some (f.e. emuiibo, because it crashes SaltyNX on it's own). It's recommended to use Kosmos v14.0.1 at least.
 
 Known issues:
-- SaltyNX is still under development, so it may cause issues on it's own:
 - Instability with some homebrews and sysmodules,
 - You need to have at least Hekate 5.0.2 if you don't want issues related to Hekate (if you use KIP rememeber to add to hekate_ipl.ini under your config line
 ```
