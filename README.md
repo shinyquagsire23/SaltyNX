@@ -55,3 +55,5 @@ List of not compatible games:
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
 
 "Heap related" games are added to excpetions.txt which is treated as Black list, 32-bit games are ignored by default
+
+Original author of SaltyNX: https://github.com/shinyquagsire23
