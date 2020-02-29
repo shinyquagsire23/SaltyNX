@@ -62,4 +62,5 @@ List of not compatible titles:
 | YouTube | all | Unknown |
 
 Titles other than 32-bit are added to exceptions.txt which is treated as Black list, you can find it in root of repo. SaltyNX reads it from SaltySD folder.
+
 32-bit games are ignored by default.
