@@ -45,7 +45,7 @@ Remember to restart Switch
 
 ---
 
-List of not compatible games:
+List of not compatible titles:
 
 | Title | Version(s) | Why? |
 | ------------- | ------------- | ------------- |
@@ -59,5 +59,6 @@ List of not compatible games:
 | Ni no Kuni: Wrath of the White Witch | all | 32-bit game, not supported |
 | Planescape: Torment and Icewind Dale | all | 32-bit game, not supported |
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
+| YouTube | all | Unknown |
 
 "Heap related" games are added to excpetions.txt which is treated as Black list, 32-bit games are ignored by default
