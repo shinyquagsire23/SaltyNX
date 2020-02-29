@@ -7,7 +7,7 @@ This fork includes many QoL improvements
 
 ---
 
-For additional functions you need SaltyNX-Tool (if you are using ReverseNX-Tool, it has all functions already integrated)
+For additional functions you need SaltyNX-Tool (if you are using ReverseNX-Tool, it has all functions already integrated from 1.35)
 
 https://github.com/masagrator/SaltyNX-Tool
 
