@@ -13,3 +13,6 @@
 ;YouTube
 ;Stucks in infinite loop
 01003A400C3DA000
+
+;Tesla Menu
+010000000007E51A
