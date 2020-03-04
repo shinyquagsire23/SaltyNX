@@ -10,13 +10,13 @@
 ;1.0.0, 1.1.0, 1.2.1 won't boot
 0100DCA0064A6000
 
-;The Talos Principle
-;1.0.0-1.0.1 crash OS
-010092A00D43C000
-
 ;Tesla Menu
 ;Just in case
 010000000007E51A
+
+;The Talos Principle
+;1.0.0-1.0.1 crash OS
+010092A00D43C000
 
 ;YouTube
 ;Stucks in infinite loop
