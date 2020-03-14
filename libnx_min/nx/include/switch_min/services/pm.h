@@ -79,8 +79,7 @@ Result pmdmntEnableDebugForTitleId(Handle* handle_out, u64 title_id);
 Result pmdmntGetApplicationPid(u64* pid_out);
 Result pmdmntEnableDebugForApplication(Handle* handle_out);
 Result pmdmntDisableDebug(void);
-
-Result pminfoGetTitleId(u64* title_id_out, u64 pid);
+Result pmdmntGetApplicationProcessId(u64* pid_out);
 
 Result pmshellLaunchProcess(u32 launch_flags, u64 titleID, u64 storageID, u64 *pid);
 Result pmshellTerminateProcessByProcessId(u64 processID);

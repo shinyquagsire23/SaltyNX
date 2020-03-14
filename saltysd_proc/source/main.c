@@ -22,6 +22,8 @@ Handle saltyport, sdcard, injectserv;
 static char g_heap[0x100000];
 bool should_terminate = false;
 bool already_hijacking = false;
+DebugEventInfo eventinfo;
+bool check = false;
 
 void __libnx_initheap(void)
 {
@@ -35,6 +37,35 @@ void __libnx_initheap(void)
 void __appInit(void)
 {
 	
+}
+
+u64 TIDnow;
+
+void renametocheatstemp() {
+	char cheatspath[64];
+	char cheatspathtemp[64];
+	TIDnow = eventinfo.tid;
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%016llx/cheats", TIDnow);
+	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
+	rename(cheatspath, cheatspathtemp);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%016llx/cheats", TIDnow);
+	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
+	rename(cheatspath, cheatspathtemp);
+	check = true;
+	return;
+}
+
+void renametocheats() {
+	char cheatspath[64];
+	char cheatspathtemp[64];
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%016llx/cheats", TIDnow);
+	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
+	rename(cheatspathtemp, cheatspath);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%016llx/cheats", TIDnow);
+	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
+	rename(cheatspathtemp, cheatspath);
+	check = false;
+	return;
 }
 
 void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
@@ -76,6 +107,7 @@ void hijack_pid(u64 pid)
 	Result ret;
 	u32 threads;
 	Handle debug;
+	
 	FILE* disabled = fopen("sdmc:/SaltySD/flags/disable.flag", "r");
 	u8 disable = 1;
 	
@@ -112,11 +144,11 @@ void hijack_pid(u64 pid)
 	char titleidnum[16];
 	char titleidnumn[17];
 	char titleidnumrn[18];
-	
-	DebugEventInfo eventinfo;
+
 	while (1)
 	{
 		ret = svcGetDebugEventInfo(&eventinfo, debug);
+		if (check == false) renametocheatstemp();
 		if (ret)
 		{
 			SaltySD_printf("SaltySD: svcGetDebugEventInfo returned %x, breaking\n", ret);
@@ -188,12 +220,14 @@ void hijack_pid(u64 pid)
 		}
 	}
 	// Poll for new threads (svcStartProcess) while stuck in debug
+	
 	do
 	{
 		ret = svcGetThreadList(&threads, tids, 0x200, debug);
 		svcSleepThread(-1);
 	}
 	while (!threads);
+	renametocheats();
 	hijack_bootstrap(&debug, pid, tids[0]);
 	
 	free(tids);
@@ -202,6 +236,7 @@ void hijack_pid(u64 pid)
 abort_bootstrap:
 	disable = 0;
 	free(tids);
+	renametocheats();
 				
 	already_hijacking = false;
 	svcCloseHandle(debug);
