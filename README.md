@@ -34,11 +34,11 @@ For Atmosphere or Reinx you can use combination KIP.zip + SaltyNX or NSP.zip + S
 
 For SX OS (2.9 or newer, older are not working) only NSP.zip + SaltyNX
 
-For Atmosphere <=0.9.4 and any other CFW in case of using NSP remember to rename contents folder to titles
+For Atmosphere <=0.9.4 and any other CFW in case of using NSP remember to rename `contents` folder to `titles`
 
-For SX OS remember to rename atmosphere folder to sxos
+For SX OS remember to rename `atmosphere` folder to `sxos`
 
-For ReinX remember to rename atmosphere folder to reinx and in case of using KIP rename kips folder to sysmodules
+For ReinX remember to rename `atmosphere` folder to `reinx` and in case of using KIP rename `kips` folder to `sysmodules`
 
 Remember to restart Switch
 
