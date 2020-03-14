@@ -26,7 +26,6 @@ Known issues:
 kip1=atmosphere/kips/*
 ```
 - 32 bit games are unsupported,
-- Crashes OS if you use Atmosphere cheat engine and you have in titles/contents folder of game you want to boot cheats. For avoiding this read "How to use cheats" in SaltyNX-Tool repo's readme,
 - For EmuMMC (and maybe sysnand too): if you use freebird, then OS can crash if you try to open hbmenu while running game (don't know if this was an issue with older releases).
 
 # How to download release:
