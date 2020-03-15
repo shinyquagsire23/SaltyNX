@@ -60,6 +60,7 @@ List of not compatible titles:
 | Planescape: Torment and Icewind Dale | all | 32-bit game, not supported |
 | The Talos Principle | all | unknown |
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
+| Valkyria Chronicles | all | 32-bit game, not supported |
 | YouTube | all | Unknown |
 
 Titles other than 32-bit are added to exceptions.txt which is treated as Black list, you can find it in root of repo. SaltyNX reads it from SaltySD folder.
