@@ -58,7 +58,6 @@ List of not compatible titles:
 | New Super Mario Bros. U Deluxe | all | 32-bit game, not supported |
 | Ni no Kuni: Wrath of the White Witch | all | 32-bit game, not supported |
 | Planescape: Torment and Icewind Dale | all | 32-bit game, not supported |
-| The Talos Principle | all | unknown |
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
 | Valkyria Chronicles | all | 32-bit game, not supported |
 | YouTube | all | Unknown |
