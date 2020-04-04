@@ -53,7 +53,7 @@ List of not compatible titles:
 | Darksiders 2 | 1.0.0 | Heap related |
 | Grid: Autosport | 1.4.0-1.5.0 | Heap related |
 | Goat Simulator | all | 32-bit game, not supported |
-| Luigi's Mansion 3 | 1.0.0-1.2.1 | Heap Related |
+| Luigi's Mansion 3 | 1.0.0-1.3.0 | Heap Related |
 | Mario Kart 8 | all | 32-bit game, not supported |
 | Megadimension Neptunia VII | all | 32-bit game, not supported |
 | Monster Hunter Generations Ultimate | all | 32-bit game, not supported |
