@@ -21,3 +21,7 @@
 ;Alien: Isolation
 ;1.1_46609 - 1.1.2_47610 crashes on first loading
 010075D00E8BA000
+
+;FIFA 20
+;1.0.0 - 1.0.3 after checking Nintendo servers abruptly closes and doesn't close all services, which results in game crash and high chance of OS crash at boot of next title
+01005DE00D05C000
