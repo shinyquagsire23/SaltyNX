@@ -48,6 +48,7 @@ List of not compatible titles:
 
 | Title | Version(s) | Why? |
 | ------------- | ------------- | ------------- |
+| Alien: Isolation | all | Heap related |
 | Azure Striker Gunvolt: Striker Pack | all | 32-bit game, not supported |
 | Darksiders 2 | 1.0.0 | Heap related |
 | Grid: Autosport | 1.4.0-1.5.0 | Heap related |
