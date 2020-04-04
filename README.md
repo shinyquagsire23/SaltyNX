@@ -51,6 +51,7 @@ List of not compatible titles:
 | Alien: Isolation | all | Heap related |
 | Azure Striker Gunvolt: Striker Pack | all | 32-bit game, not supported |
 | Darksiders 2 | 1.0.0 | Heap related |
+| FIFA 20 | 1.0.0 - 1.0.3 | Unknown |
 | Grid: Autosport | 1.4.0-1.5.0 | Heap related |
 | Goat Simulator | all | 32-bit game, not supported |
 | Luigi's Mansion 3 | 1.0.0-1.3.0 | Heap Related |
