@@ -79,7 +79,7 @@ Result load_elf(char* path)
     for (auto seg : elf.get_segments())
     {
         u64 min = seg.segment_virtaddr;
-        u64 max = seg.segment_virtaddr + ((seg.segment_memsize + 0xFFF) & ~0xFFF);
+        u64 max = seg.segment_virtaddr + (seg.segment_memsize + 0xFFF & ~0xFFF);
         if (min < min_vaddr)
             min_vaddr = min;
 
@@ -107,22 +107,22 @@ Result load_elf(char* path)
     if (ret) return ret;
     SaltySD_printf("SaltySD Spawner: got handle %x for process\n", proc);
     
-    uintptr_t test = (uintptr_t)virtmemReserve(procInfo.codePages * 0x1000);
-    ret = svcMapProcessMemory((void*)test, proc, procInfo.codeAddr, procInfo.codePages * 0x1000);
+    void* test = virtmemReserve(procInfo.codePages * 0x1000);
+    ret = svcMapProcessMemory(test, proc, procInfo.codeAddr, procInfo.codePages * 0x1000);
     if (ret) return ret;
 
     for (auto& seg : elf.get_segments())
     {
-        elf.read_segment(seg, (void*)(test + seg.segment_virtaddr));
+        elf.read_segment(seg, test + seg.segment_virtaddr);
     }
     
-    ret = svcUnmapProcessMemory((void*)test, proc, procInfo.codeAddr, procInfo.codePages * 0x1000);
+    ret = svcUnmapProcessMemory(test, proc, procInfo.codeAddr, procInfo.codePages * 0x1000);
     if (ret) return ret;
     
     // Adjust permissions and then launch
     for (auto seg : elf.get_segments())
     {
-        ret = svcSetProcessMemoryPermission(proc, procInfo.codeAddr + seg.segment_virtaddr, (seg.segment_memsize + 0xFFF) & ~0xFFF, seg.segment_flags);
+        ret = svcSetProcessMemoryPermission(proc, procInfo.codeAddr + seg.segment_virtaddr, seg.segment_memsize + 0xFFF & ~0xFFF, seg.segment_flags);
     }
     
     ret = svcStartProcess(proc, 49, 3, 0x10000);

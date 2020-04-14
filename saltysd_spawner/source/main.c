@@ -1,4 +1,4 @@
-#include <switch.h>
+#include <switch_min.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -22,6 +22,7 @@ void __libnx_initheap(void)
 
 void __appInit(void)
 {
+    Result ret;
     
     svcSleepThread(1*1000*1000*1000);
     smInitialize();
@@ -48,8 +49,6 @@ void __appExit(void)
     fsExit();
     smExit();
 }
-
-Result load_elf(char* path);
 
 int main(int argc, char *argv[])
 {
