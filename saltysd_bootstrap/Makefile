@@ -39,7 +39,7 @@ EXEFS_SRC	:=	exefs_src
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -s
 
 ASFLAGS :=  $(ARCH)
 
@@ -52,13 +52,15 @@ CFLAGS	+=	$(INCLUDE) -DSWITCH
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-T $(TOPDIR)/rel.ld -z text -z nodynamic-undefined-weak --build-id=sha1 -g -nostartfiles -nodefaultlibs --emit-relocs -s
+LDFLAGS	=	-T $(TOPDIR)/rel.ld -z text -z nodynamic-undefined-weak --build-id=sha1 -g -nostartfiles -nodefaultlibs --emit-relocs
+
+LIBS	:= -lnx_min
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(LIBNX)
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/../libnx_min/nx/
 
 
 #---------------------------------------------------------------------------------

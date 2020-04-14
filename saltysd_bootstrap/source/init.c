@@ -1,4 +1,4 @@
-#include <switch.h>
+#include <switch_min.h>
 #include <sys/iosupport.h>
 
 int __system_argc;
