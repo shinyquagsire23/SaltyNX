@@ -11,7 +11,7 @@ For additional functions you need SaltyNX-Tool (if you are using ReverseNX-Tool,
 
 https://github.com/masagrator/SaltyNX-Tool
 
-Tests were done on FW 7.0.1-9.1.0, Atmosphere 0.9.1-0.9.4, 0.10.1-0.10.4
+Tests were done on FW 7.0.1-10.0.0, Atmosphere 0.9.1-0.9.4, 0.10.1-0.10.4, 0.11.1
 
 It should work with ReinX too.
 
