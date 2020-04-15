@@ -89,7 +89,7 @@ Result load_elf(char* path)
     
     strcpy(procInfo.name, "SaltySD");
     procInfo.category = 1; // builtin
-    procInfo.tid = 0x0100000000535344;
+    procInfo.tid = 0x0000000000535344;
     procInfo.codeAddr = 0x800000000;
     procInfo.codePages = (max_vaddr - min_vaddr) / 0x1000;
     procInfo.isA64 = true;
