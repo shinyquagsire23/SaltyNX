@@ -515,29 +515,100 @@ void serviceThread(void* buf)
 	//SaltySD_printf("SaltySD: done accepting service calls\n");
 }
 
+Result fsp_init(Service fsp)
+{
+    Result rc;
+    IpcCommand c;
+    ipcInitialize(&c);
+    ipcSendPid(&c);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+        u64 unk;
+    } *raw;
+
+    raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 1;
+    raw->unk = 0;
+
+    rc = serviceIpcDispatch(&fsp);
+
+    if (R_SUCCEEDED(rc)) {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 result;
+        } *resp = r.Raw;
+
+        rc = resp->result;
+    }
+    
+    return rc;
+}
+
+Result fsp_getSdCard(Service fsp, Handle* out)
+{
+    Result rc;
+    IpcCommand c;
+    ipcInitialize(&c);
+
+    struct {
+        u64 magic;
+        u64 cmd_id;
+    } *raw;
+
+    raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+    raw->magic = SFCI_MAGIC;
+    raw->cmd_id = 18;
+
+    rc = serviceIpcDispatch(&fsp);
+
+    if (R_SUCCEEDED(rc)) {
+        IpcParsedCommand r;
+        ipcParse(&r);
+
+        struct {
+            u64 magic;
+            u64 result;
+        } *resp = r.Raw;
+
+        *out = r.Handles[0];
+
+        rc = resp->result;
+    }
+    
+    return rc;
+}
+
 int main(int argc, char *argv[])
 {
 	Result ret;
-	Handle port;
 	
-	debug_log("SaltySD says hello!\n");
+	svcSleepThread(1*1000*1000*1000);
+	smInitialize();
 	
-	do
-	{
-		ret = svcConnectToNamedPort(&port, "Spawner");
-		svcSleepThread(1000*1000);
-	}
-	while (ret);
-	
-	// Begin asking for handles
-	get_handle(port, &sdcard, "sdcard");
-	terminate_spawner(port);
-	svcCloseHandle(port);
-	
-	// Init fs stuff
+	for (int i = 0; i < 7; i++)
+    {
+        svcSleepThread(1*1000*1000*1000);
+    }
+
+    Service toget;
+    smGetService(&toget, "fsp-srv");
+	fsp_init(toget);
+	fsp_getSdCard(toget, &sdcard);
+	SaltySD_printf("SaltySD: got SD card dev.\n");
+	smExit();
+	smInitialize();
 	FsFileSystem sdcardfs;
 	sdcardfs.s.handle = sdcard;
 	fsdevMountDevice("sdmc", sdcardfs);
+	SaltySD_printf("SaltySD: got SD card.\n");
 
 	// Start our port
 	// For some reason, we only have one session maximum (0 reslimit handle related?)	
@@ -583,6 +654,8 @@ int main(int argc, char *argv[])
 	free(pids);
 	
 	fsdevUnmountAll();
+	fsExit();
+	smExit();
 
 	return 0;
 }
