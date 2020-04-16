@@ -52,7 +52,7 @@ u64 SaltySDCore_findCode(u8* code, size_t size)
     while (1)
     {
         void* out = boyer_moore_search((void*)addr, addr_size, code, size);
-        if (out) return out;
+        if (out) return (u64)out;
         
         addr += addr_size;
 

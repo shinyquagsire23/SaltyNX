@@ -269,7 +269,7 @@ Result SaltySD_print(char* out)
     {
         u64 magic;
         u64 cmd_id;
-        char log[64];
+        char log[65];
         u64 reserved[2];
     } *raw;
 
@@ -306,13 +306,16 @@ Result SaltySD_printf(const char* format, ...)
     va_start(args, format);
     vsnprintf(tmp, 256, format, args);
     va_end(args);
-
-    for (int i = 0; i < strlen(tmp); i)
-    {
+	
+	int i = 0;
+	while(i < strlen(tmp)) {
         ret = SaltySD_print(tmp + i);
         i += 64;
 
-        if (ret) break;
+        if (ret) {
+			i = 0;
+			break;
+		}
     }
 
     if (ret)

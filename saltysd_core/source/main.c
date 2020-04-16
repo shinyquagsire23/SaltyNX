@@ -8,6 +8,8 @@
 #include <sys/reent.h>
 #include <switch_min/kernel/ipc.h>
 #include <switch_min/runtime/threadvars.h>
+#include <stdlib.h>
+#include <inttypes.h>
 
 #include "useful.h"
 #include "saltysd_ipc.h"
@@ -21,7 +23,7 @@ u32 __nx_applet_type = AppletType_None;
 static char g_heap[0x20000];
 
 extern void __nx_exit_clear(void* ctx, Handle thread, void* addr);
-extern elf_trampoline(void* context, Handle thread, void* func);
+extern void elf_trampoline(void* context, Handle thread, void* func);
 void* __stack_tmp;
 
 Handle orig_main_thread;
@@ -49,7 +51,7 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
     vars_mine.handle = main_thread;
     vars_mine.thread_ptr = NULL;
     vars_mine.reent = _impure_ptr;
-    vars_mine.tls_tp = malloc(0x1000);
+    vars_mine.tls_tp = (void*)malloc(0x1000);
     vars_orig = *getThreadVars();
     *getThreadVars() = vars_mine;
     
@@ -58,7 +60,7 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
     __libc_init_array();
 }
 
-void __attribute__((weak)) NORETURN __libnx_exit(int rc)
+void __attribute__((weak)) __libnx_exit(int rc)
 {
     fsdevUnmountAll();
 
@@ -71,17 +73,14 @@ void __attribute__((weak)) NORETURN __libnx_exit(int rc)
     
     u64 addr = SaltySDCore_getCodeStart();
 
-    debug_log("SaltySD Core: jumping to %llx\n", addr);
-
     __nx_exit_clear(orig_ctx, orig_main_thread, (void*)addr);
 }
 
-void*  g_heapAddr;
+u64  g_heapAddr;
 size_t g_heapSize;
 
 void setupELFHeap(void)
 {
-    u64 size = 0;
     void* addr = NULL;
     Result rc = 0;
 
@@ -92,7 +91,7 @@ void setupELFHeap(void)
         debug_log("SaltySD Bootstrap: svcSetHeapSize failed with err %x\n", rc);
     }
 
-    g_heapAddr = addr;
+    g_heapAddr = (u64)addr;
     g_heapSize = ((elf_area_size+0x100000+0x200000) & 0xffe00000);
 }
 
@@ -130,7 +129,8 @@ void SaltySDCore_RegisterExistingModules()
         if (info.perm == Perm_Rx)
         {
             SaltySDCore_RegisterModule((void*)info.addr);
-            if (info.addr != _start)
+			u64 compaddr = (u64)info.addr;
+            if ((u64*)compaddr != (u64*)_start)
                 SaltySDCore_RegisterBuiltinModule((void*)info.addr);
         }
 
@@ -139,12 +139,12 @@ void SaltySDCore_RegisterExistingModules()
         if (!addr || ret) break;
     }
     
-    return 0;
+    return;
 }
 
 Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 {
-    Result ret = svcSetHeapSize(out, size+((elf_area_size+0x200000) & 0xffe00000));
+    Result ret = svcSetHeapSize((void*)out, size+((elf_area_size+0x200000) & 0xffe00000));
     
     //SaltySD_printf("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+((elf_area_size+0x200000) & 0xffe00000));
     
@@ -173,12 +173,10 @@ Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
 void SaltySDCore_PatchSVCs()
 {
     Result ret;
-    const u8 orig_1[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x00, 0x00, 0xD4};
-    const u8 orig_2[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x05, 0x00, 0xD4};
+    u8 orig_1[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x00, 0x00, 0xD4};
+    u8 orig_2[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x05, 0x00, 0xD4};
     const u8 nop[0x4] = {0x1F, 0x20, 0x03, 0xD5};
-    u8 patch[0x10] = {0x44, 0x00, 0x00, 0x58, 0x80, 0x00, 0x1F, 0xD6, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x00};
-    
-    u64 code = SaltySDCore_getCodeStart();
+    u8 patch[0x10] = {0x44, 0x00, 0x00, 0x58, 0x80, 0x00, 0x1F, 0xD6, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0};
     u64 dst_1 = SaltySDCore_findCode(orig_1, 8);
     u64 dst_2 = SaltySDCore_findCode(orig_2, 8);
     
@@ -188,7 +186,7 @@ void SaltySDCore_PatchSVCs()
         return;
     }
 
-    *(u64*)&patch[8] = svcSetHeapSizeIntercept;
+    *(u64*)&patch[8] = (u64)svcSetHeapSizeIntercept;
     if (dst_1 & 4)
     {
         ret = SaltySD_Memcpy(dst_1, (u64)nop, 0x4);
@@ -207,7 +205,7 @@ void SaltySDCore_PatchSVCs()
     }
     if (ret) debug_log("svcSetHeapSize memcpy failed!\n");
     
-    *(u64*)&patch[8] = svcGetInfoIntercept;
+    *(u64*)&patch[8] = (u64)svcGetInfoIntercept;
     if (dst_2 & 4)
     {
         ret = SaltySD_Memcpy(dst_2, (u64)nop, 0x4);
@@ -229,13 +227,13 @@ void SaltySDCore_PatchSVCs()
 
 void** SaltySDCore_LoadPluginsInDir(char* path, void** entries, size_t* num_elfs)
 {
-    char* tmp = malloc(0x80);
+    char* tmp = malloc(0x100);
     DIR *d;
     struct dirent *dir;
 
     SaltySD_printf("SaltySD Core: Searching plugin dir `%s'...\n", path);
     
-    snprintf(tmp, 0x80, "sdmc:/SaltySD/plugins/%s", path);
+    snprintf(tmp, 0x100, "sdmc:/SaltySD/plugins/%s", path);
 
     d = opendir(tmp);
     if (d)
@@ -248,7 +246,7 @@ void** SaltySDCore_LoadPluginsInDir(char* path, void** entries, size_t* num_elfs
                 u64 elf_addr, elf_size;
                 setupELFHeap();
                 
-                snprintf(tmp, 0x80, "%s%s", path, dir->d_name);
+                snprintf(tmp, 0x100, "%s%s", path, dir->d_name);
                 SaltySD_LoadELF(find_next_elf_heap(), &elf_addr, &elf_size, tmp);
 
                 *num_elfs = *num_elfs + 1;
