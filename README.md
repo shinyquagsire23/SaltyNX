@@ -32,7 +32,7 @@ kip1=atmosphere/kips/*
 
 For Atmosphere >=0.10.1 just put folders from archive to root of your sdcard.
 
-For Atmosphere <=0.9.4 and any other CFW in case of using NSP remember to rename `contents` folder to `titles`
+For Atmosphere <=0.9.4 and any other CFW rename `contents` folder to `titles`
 
 For SX OS remember to rename `atmosphere` folder to `sxos`
 
