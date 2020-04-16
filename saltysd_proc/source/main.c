@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <switch_min/kernel/svc_extra.h>
 #include <switch_min/kernel/ipc.h>
 #include "saltysd_bootstrap_elf.h"
@@ -42,13 +43,13 @@ void __appInit(void)
 u64 TIDnow;
 
 void renametocheatstemp() {
-	char cheatspath[64];
+	char cheatspath[60];
 	char cheatspathtemp[64];
 	TIDnow = eventinfo.tid;
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%016llx/cheats", TIDnow);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%"PRIx64"/cheats", TIDnow);
 	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
 	rename(cheatspath, cheatspathtemp);
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%016llx/cheats", TIDnow);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%"PRIx64"/cheats", TIDnow);
 	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
 	rename(cheatspath, cheatspathtemp);
 	check = true;
@@ -56,12 +57,12 @@ void renametocheatstemp() {
 }
 
 void renametocheats() {
-	char cheatspath[64];
+	char cheatspath[60];
 	char cheatspathtemp[64];
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%016llx/cheats", TIDnow);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%"PRIx64"/cheats", TIDnow);
 	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
 	rename(cheatspathtemp, cheatspath);
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%016llx/cheats", TIDnow);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%"PRIx64"/cheats", TIDnow);
 	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
 	rename(cheatspathtemp, cheatspath);
 	check = false;
@@ -166,9 +167,9 @@ void hijack_pid(u64 pid)
 			SaltySD_printf("         isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
 			SaltySD_printf("         enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
 			SaltySD_printf("         exception %016llx\n", eventinfo.userExceptionContextAddr);
-			snprintf(titleidnum, sizeof titleidnum, "%016llx", eventinfo.tid);
-			snprintf(titleidnumn, sizeof titleidnumn, "%016llx\n", eventinfo.tid);
-			snprintf(titleidnumrn, sizeof titleidnumrn, "%016llx\r\n", eventinfo.tid);
+			snprintf(titleidnum, sizeof titleidnum, "%"PRIx64, eventinfo.tid);
+			snprintf(titleidnumn, sizeof titleidnumn, "%"PRIx64"\n", eventinfo.tid);
+			snprintf(titleidnumrn, sizeof titleidnumrn, "%"PRIx64"\r\n", eventinfo.tid);
 			
 
 			if (!eventinfo.isA64)
@@ -204,7 +205,6 @@ void hijack_pid(u64 pid)
 						thesame2 = 0;
 						thesame3 = 0;
 					}	
-					char exceptions = "";
 				}
 				fclose(except);
 			}
@@ -348,12 +348,6 @@ Result handleServiceCmd(int cmd)
 	{
 		IpcParsedCommand r = {0};
 		ipcParse(&r);
-
-		struct {
-			u64 magic;
-			u64 command;
-			u32 reserved[4];
-		} *resp = r.Raw;
 
 		SaltySD_printf("SaltySD: cmd 2 handler\n");
 		
@@ -588,7 +582,6 @@ Result fsp_getSdCard(Service fsp, Handle* out)
 
 int main(int argc, char *argv[])
 {
-	Result ret;
 	
 	svcSleepThread(1*1000*1000*1000);
 	smInitialize();
@@ -612,7 +605,7 @@ int main(int argc, char *argv[])
 
 	// Start our port
 	// For some reason, we only have one session maximum (0 reslimit handle related?)	
-	ret = svcManageNamedPort(&saltyport, "SaltySD", 1);
+	svcManageNamedPort(&saltyport, "SaltySD", 1);
 	svcManageNamedPort(&injectserv, "InjectServ", 1);
 
 	// Main service loop

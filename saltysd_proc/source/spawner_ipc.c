@@ -14,7 +14,7 @@ Result get_handle(Handle port, Handle *retrieve, char* name)
     struct {
         u64 magic;
         u64 cmd_id;
-        char name[12];
+        char name[13];
         u32 reserved;
     } *raw;
 

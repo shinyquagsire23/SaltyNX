@@ -102,7 +102,7 @@ Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, 
     for (auto seg : elf.get_segments())
     {
         u64 min = seg.phdr->p_vaddr;
-        u64 max = seg.phdr->p_vaddr + (seg.phdr->p_memsz + 0xFFF & ~0xFFF);
+        u64 max = seg.phdr->p_vaddr + ((seg.phdr->p_memsz + 0xFFF) & ~0xFFF);
         if (min < min_vaddr)
             min_vaddr = min;
 
@@ -158,7 +158,7 @@ Result load_elf_proc(Handle proc, uint64_t pid, uint64_t heap, uint64_t* start, 
             }
         }
 
-        svcSetProcessMemoryPermission(proc, load_addr + seg.phdr->p_vaddr, seg.phdr->p_memsz + 0xFFF & ~0xFFF, perms);
+        svcSetProcessMemoryPermission(proc, load_addr + seg.phdr->p_vaddr, (seg.phdr->p_memsz + 0xFFF) & ~0xFFF, perms);
     }
     
     *start = load_addr;

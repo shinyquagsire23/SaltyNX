@@ -120,7 +120,7 @@ typedef struct {
     uint64_t get_symbol_value(const std::vector<symbol_t> &syms) {
         uint64_t sym_val = 0;
         for(auto &sym: syms) {
-            if(sym.symbol_num == ELF64_R_SYM(rela->r_info)) {
+            if(sym.symbol_num == (const int)ELF64_R_SYM(rela->r_info)) {
                 sym_val = sym.sym->st_value;
                 break;
             }
@@ -132,7 +132,7 @@ typedef struct {
     std::string get_symbol_name(const std::vector<symbol_t> &syms) {
         std::string sym_name;
         for(auto &sym: syms) {
-            if(sym.symbol_num == ELF64_R_SYM(rela->r_info)) {
+            if(sym.symbol_num == (const int)ELF64_R_SYM(rela->r_info)) {
                 sym_name = sym.symbol_name;
                 break;
             }

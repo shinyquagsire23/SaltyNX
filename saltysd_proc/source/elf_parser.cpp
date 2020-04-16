@@ -50,10 +50,6 @@ std::vector<segment_t> Elf_parser::get_segments() {
     Elf64_Phdr *phdr = (Elf64_Phdr*)(m_mmap_program + ehdr->e_phoff);
     int phnum = ehdr->e_phnum;
 
-    Elf64_Shdr *shdr = (Elf64_Shdr*)(m_mmap_program + ehdr->e_shoff);
-    Elf64_Shdr *sh_strtab = &shdr[ehdr->e_shstrndx];
-    const char *const sh_strtab_p = (char*)m_mmap_program + sh_strtab->sh_offset;
-
     std::vector<segment_t> segments;
     for (int i = 0; i < phnum; ++i) {
         segment_t segment;
@@ -69,10 +65,6 @@ std::vector<segment_t> Elf_parser::get_segments() {
 
 std::vector<symbol_t> Elf_parser::get_symbols() {
     std::vector<section_t> secs = get_sections();
-
-    // get headers for offsets
-    Elf64_Ehdr *ehdr = (Elf64_Ehdr*)m_mmap_program;
-    Elf64_Shdr *shdr = (Elf64_Shdr*)(m_mmap_program + ehdr->e_shoff);
 
     // get strtab
     char *sh_strtab_p = nullptr;
@@ -100,7 +92,7 @@ std::vector<symbol_t> Elf_parser::get_symbols() {
         auto total_syms = sec.shdr->sh_size / sizeof(Elf64_Sym);
         auto syms_data = (Elf64_Sym*)(m_mmap_program + sec.shdr->sh_offset);
 
-        for (int i = 0; i < total_syms; ++i) {
+        for (uint32_t i = 0; i < total_syms; ++i) {
             symbol_t symbol;
             symbol.sym = &syms_data[i];
             symbol.symbol_num       = i;
@@ -142,7 +134,7 @@ std::vector<relocation_t> Elf_parser::get_relocations() {
         auto total_relas = sec.shdr->sh_size / sizeof(Elf64_Rela);
         auto relas_data  = (Elf64_Rela*)(m_mmap_program + sec.shdr->sh_offset);
 
-        for (int i = 0; i < total_relas; ++i) {
+        for (uint32_t i = 0; i < total_relas; ++i) {
             relocation_t rel;
             rel.rela = &relas_data[i];
             rel.section_idx = sec.shdr->sh_info;
@@ -327,7 +319,7 @@ void Elf_parser::relocate_segment(int num, uint64_t new_addr)
             uint32_t page_lowerpart = pages >> 2;
             uint32_t page_upperpart = pages & 3;
             
-            printf("%x %x\n", page_lowerpart);
+            printf("%x %x\n", page_lowerpart, page_upperpart);
 
             *(uint32_t*)(rel_sec.data + rel.rela->r_offset - rel_sec.shdr->sh_addr) &= ~0x607FFFE0;
             *(uint32_t*)(rel_sec.data + rel.rela->r_offset - rel_sec.shdr->sh_addr) |= (page_lowerpart << 5) & 0x7FFFE0;
