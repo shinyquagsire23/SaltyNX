@@ -8,6 +8,10 @@
 
 static inline void SaltySD_printf(const char* format, ...)
 {
+	FILE* logflag = fopen("sdmc:/SaltySD/flags/log.flag", "r");
+	if (logflag == NULL) return;
+	fclose(logflag);
+	
     char buffer[256];
 
     va_list args;
