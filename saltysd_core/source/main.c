@@ -9,7 +9,6 @@
 #include <switch_min/kernel/ipc.h>
 #include <switch_min/runtime/threadvars.h>
 #include <stdlib.h>
-#include <inttypes.h>
 
 #include "useful.h"
 #include "saltysd_ipc.h"
