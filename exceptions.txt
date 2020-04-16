@@ -11,7 +11,7 @@
 0100DCA0064A6000
 
 ;Tesla Menu
-;Just in case
+;Just in case (old titleid, new one is blacklisted by internal titleid validating)
 010000000007E51A
 
 ;YouTube
