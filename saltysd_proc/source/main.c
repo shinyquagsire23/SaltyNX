@@ -40,16 +40,24 @@ void __appInit(void)
 	
 }
 
+void __appExit(void)
+{
+	already_hijacking = false;
+	fsdevUnmountAll();
+	fsExit();
+	smExit();
+}
+
 u64 TIDnow;
 
 void renametocheatstemp() {
 	char cheatspath[60];
 	char cheatspathtemp[64];
 	TIDnow = eventinfo.tid;
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%"PRIx64"/cheats", TIDnow);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%016"PRIx64"/cheats", TIDnow);
 	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
 	rename(cheatspath, cheatspathtemp);
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%"PRIx64"/cheats", TIDnow);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%016"PRIx64"/cheats", TIDnow);
 	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
 	rename(cheatspath, cheatspathtemp);
 	check = true;
@@ -59,10 +67,10 @@ void renametocheatstemp() {
 void renametocheats() {
 	char cheatspath[60];
 	char cheatspathtemp[64];
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%"PRIx64"/cheats", TIDnow);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%016"PRIx64"/cheats", TIDnow);
 	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
 	rename(cheatspathtemp, cheatspath);
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%"PRIx64"/cheats", TIDnow);
+	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%016"PRIx64"/cheats", TIDnow);
 	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
 	rename(cheatspathtemp, cheatspath);
 	check = false;
@@ -140,11 +148,11 @@ void hijack_pid(u64 pid)
 
 	SaltySD_printf("SaltySD: new max %lx, %x %016lx\n", pid, threads, context.pc.x);
 
-	char exceptions[18];
-	char line[18];
-	char titleidnum[16];
-	char titleidnumn[17];
-	char titleidnumrn[18];
+	char exceptions[19];
+	char line[19];
+	char titleidnum[19];
+	char titleidnumn[19];
+	char titleidnumrn[19];
 
 	while (1)
 	{
@@ -167,9 +175,9 @@ void hijack_pid(u64 pid)
 			SaltySD_printf("         isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
 			SaltySD_printf("         enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
 			SaltySD_printf("         exception %016llx\n", eventinfo.userExceptionContextAddr);
-			snprintf(titleidnum, sizeof titleidnum, "%"PRIx64, eventinfo.tid);
-			snprintf(titleidnumn, sizeof titleidnumn, "%"PRIx64"\n", eventinfo.tid);
-			snprintf(titleidnumrn, sizeof titleidnumrn, "%"PRIx64"\r\n", eventinfo.tid);
+			snprintf(titleidnum, sizeof titleidnum, "%016"PRIx64, eventinfo.tid);
+			snprintf(titleidnumn, sizeof titleidnumn, "%016"PRIx64"\n", eventinfo.tid);
+			snprintf(titleidnumrn, sizeof titleidnumrn, "%016"PRIx64"\r\n", eventinfo.tid);
 			
 
 			if (!eventinfo.isA64)
