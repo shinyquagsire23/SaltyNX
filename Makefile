@@ -9,7 +9,7 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/devkitA64/base_rules
 
-all: libnx_min/nx/lib/libnx_min.a sdcard_out/SaltySD/saltysd_core.elf sdcard_out/atmosphere/contents/0000000000535344/exefs.nsp
+all: libnx_min/nx/lib/libnx_min.a sdcard_out/SaltySD/saltysd_core.elf sdcard_out/atmosphere/contents/0000000000534C56/exefs.nsp
 
 libnx_min/nx/lib/libnx_min.a:
 	@cd libnx_min && make
@@ -31,11 +31,14 @@ sdcard_out/SaltySD/saltysd_core.elf: saltysd_core/saltysd_core.elf
 	@mkdir -p sdcard_out/SaltySD/
 	@cp $< $@
 
-sdcard_out/atmosphere/contents/0000000000535344/exefs.nsp: saltysd_proc/saltysd_proc.nsp
-	@mkdir -p sdcard_out/atmosphere/contents/0000000000535344/flags
+sdcard_out/atmosphere/contents/0000000000534C56/exefs.nsp: saltysd_proc/saltysd_proc.nsp
+	@mkdir -p sdcard_out/atmosphere/contents/0000000000534C56/flags
 	@cp $< $@
-	@touch sdcard_out/atmosphere/contents/0000000000535344/flags/boot2.flag
+	@touch sdcard_out/atmosphere/contents/0000000000534C56/flags/boot2.flag
+	@mkdir -p sdcard_out/SaltySD/flags/
+	@touch sdcard_out/SaltySD/flags/log.flag
 	@cp exceptions.txt sdcard_out/SaltySD/exceptions.txt
+	@cp toolbox.json sdcard_out/atmosphere/contents/0000000000534C56/toolbox.json
 
 
 clean:
