@@ -100,23 +100,22 @@ Result saltySDLoadELF(Handle salt, u64 heap, u64* elf_addr, u64* elf_size, char*
     return ret;
 }
 
-void*  g_heapAddr;
+u64  g_heapAddr;
 size_t g_heapSize;
 
 void setupAppHeap(void)
 {
-    u64 size = 0;
-    void* addr = NULL;
+    void* addr = 0;
     Result rc = 0;
 
     rc = svcSetHeapSize(&addr, 0x200000);
 
-    if (rc || addr == NULL)
+    if (rc || addr == 0)
     {
         write_log("SaltySD Bootstrap: svcSetHeapSize failed with err %x\n", rc);
     }
 
-    g_heapAddr = addr;
+    g_heapAddr = (u64)addr;
     g_heapSize = 0x200000;
 }
 
@@ -145,7 +144,7 @@ int main(int argc, char *argv[])
     if (ret) goto fail;
     
     write_log("SaltySD Bootstrap: ELF loaded to %p\n", (void*)new_addr);
-    __saltysd_exit_func = new_addr;
+    __saltysd_exit_func = (void*)new_addr;
 
     svcCloseHandle(saltysd);
 
