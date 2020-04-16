@@ -593,11 +593,6 @@ int main(int argc, char *argv[])
 	
 	svcSleepThread(1*1000*1000*1000);
 	smInitialize();
-	
-	for (int i = 0; i < 7; i++)
-    {
-        svcSleepThread(1*1000*1000*1000);
-    }
 
     Service toget;
     smGetService(&toget, "fsp-srv");
@@ -650,7 +645,7 @@ int main(int argc, char *argv[])
 			svcCloseHandle(sesja);
 		}
 
-		svcSleepThread(1000*1000);
+		svcSleepThread(50*1000*1000);
 	}
 	free(pids);
 	
