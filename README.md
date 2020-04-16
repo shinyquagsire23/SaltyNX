@@ -21,10 +21,7 @@ Clean Kosmos crashes SaltyNX because of too much sysmodules. You need to delete 
 
 Known issues:
 - Instability with some homebrews and sysmodules,
-- You need to have at least Hekate 5.0.2 if you don't want issues related to Hekate (if you use KIP rememeber to add to hekate_ipl.ini under your config line
-```
-kip1=atmosphere/kips/*
-```
+- You need to have at least Hekate 5.0.2 if you don't want issues related to Hekate
 - 32 bit games are unsupported,
 - For EmuMMC (and maybe sysnand too): if you use freebird, then OS can crash if you try to open hbmenu while running game (don't know if this was an issue with older releases).
 
