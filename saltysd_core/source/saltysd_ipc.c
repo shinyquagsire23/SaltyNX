@@ -244,7 +244,7 @@ Result SaltySD_GetSDCard(Handle *retrieve)
         
         if (!ret)
         {
-            SaltySD_printf("SaltySD Core: got SD card handle %x\n", r.Handles[0]);
+            SaltySDCore_printf("SaltySD Core: got SD card handle %x\n", r.Handles[0]);
             *retrieve = r.Handles[0];
             
             // Init fs stuff

@@ -111,6 +111,23 @@ void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
 	svcCloseHandle(*debug);
 }
 
+void RemoveChars(char *s, char c)
+{
+    int writer = 0, reader = 0;
+
+    while (s[reader])
+    {
+        if (s[reader]!=c) 
+        {   
+            s[writer++] = s[reader];
+        }
+
+        reader++;       
+    }
+
+    s[writer]=0;
+}
+
 void hijack_pid(u64 pid)
 {
 	Result ret;
@@ -169,22 +186,9 @@ void hijack_pid(u64 pid)
 
 		if (eventinfo.type == DebugEvent_AttachProcess)
 		{
-			SaltySD_printf("SaltySD: found AttachProcess event:\n");
-			SaltySD_printf("         tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
-			SaltySD_printf("         name %s\n", eventinfo.name);
-			SaltySD_printf("         isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
-			SaltySD_printf("         enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
-			SaltySD_printf("         exception %016llx\n", eventinfo.userExceptionContextAddr);
 			snprintf(titleidnum, sizeof titleidnum, "%016"PRIx64, eventinfo.tid);
 			snprintf(titleidnumn, sizeof titleidnumn, "%016"PRIx64"\n", eventinfo.tid);
 			snprintf(titleidnumrn, sizeof titleidnumrn, "%016"PRIx64"\r\n", eventinfo.tid);
-			
-
-			if (!eventinfo.isA64)
-			{
-				SaltySD_printf("SaltySD: ARM32 applications are not supported, aborting bootstrap...\n");
-				goto abort_bootstrap;
-			}
 
 			if (eventinfo.tid <= 0x010000000000FFFF)
 			{
@@ -220,6 +224,17 @@ void hijack_pid(u64 pid)
 				SaltySD_printf("SaltySD: Detected disable.flag, aborting bootstrap...\n");
 				goto abort_bootstrap;
 			}
+			SaltySD_printf("SaltySD: found valid AttachProcess event:\n");
+			SaltySD_printf("         tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
+			SaltySD_printf("         name %s\n", eventinfo.name);
+			SaltySD_printf("         isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
+			SaltySD_printf("         enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
+			SaltySD_printf("         exception %016llx\n", eventinfo.userExceptionContextAddr);
+			if (!eventinfo.isA64)
+			{
+				SaltySD_printf("SaltySD: ARM32 applications plugins are not supported, aborting bootstrap...\n");
+				goto abort_bootstrap;
+			}
 		}
 		else
 		{
@@ -236,6 +251,7 @@ void hijack_pid(u64 pid)
 	}
 	while (!threads);
 	renametocheats();
+	
 	hijack_bootstrap(&debug, pid, tids[0]);
 	
 	free(tids);
@@ -427,6 +443,7 @@ Result handleServiceCmd(int cmd)
 	}
 	else if (cmd == 5) // Log
 	{
+		SaltySD_printf("SaltySD: cmd 5 handler\n");
 		IpcParsedCommand r = {0};
 		ipcParse(&r);
 

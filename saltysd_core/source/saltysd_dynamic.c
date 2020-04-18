@@ -161,7 +161,7 @@ void SaltySDCore_ReplaceModuleImport(void* base, char* name, void* newfunc)
 		char* rel_name = strtab + symtab[sym_idx].st_name;
 		if (strcmp(name, rel_name)) continue;
 		
-		SaltySD_printf("SaltySD Core: %x %s to %p, %llx %p\n", rela_idx, rel_name, newfunc, rela->r_offset, base + rela->r_offset);
+		SaltySDCore_printf("SaltySD Core: %x %s to %p, %llx %p\n", rela_idx, rel_name, newfunc, rela->r_offset, base + rela->r_offset);
 
 		Elf64_Rela replacement = *rela;
 		replacement.r_addend = rela->r_addend + (uint64_t)newfunc - SaltySDCore_FindSymbolBuiltin(rel_name);
@@ -235,7 +235,7 @@ void SaltySDCore_DynamicLinkModule(void* base)
 
 		uint64_t sym_val_and_addend = sym_val + rela->r_addend;
 
-		SaltySD_printf("SaltySD Core: %x %llx->%llx %s\n", sym_idx, symtab[sym_idx].st_value + rela->r_addend, sym_val_and_addend, name);
+		SaltySDCore_printf("SaltySD Core: %x %llx->%llx %s\n", sym_idx, symtab[sym_idx].st_value + rela->r_addend, sym_val_and_addend, name);
 
 		switch (ELF64_R_TYPE(rela->r_info))
 		{
