@@ -231,7 +231,7 @@ void SaltySDCore_RegisterExistingModules()
 
 Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 {
-	Result ret = svcSetHeapSize((void*)out, size+((elf_area_size+0x200000) & 0xffe00000));
+	Result ret = svcSetHeapSize((void*)out, size+((elf_area_size+0x400000) & 0xffc00000));
 	
 	//SaltySDCore_printf("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+((elf_area_size+0x200000) & 0xffe00000));
 	
@@ -243,33 +243,17 @@ Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 	return ret;
 }
 
-Result svcGetInfoIntercept (u64 *out, u64 id0, Handle handle, u64 id1)
-{
-	Result ret = svcGetInfo(out, id0, handle, id1);
-	
-	//SaltySDCore_printf("SaltySD Core: svcGetInfo intercept %p (%llx) %llx %x %llx ret %x\n", out, *out, id0, handle, id1, ret);
-	
-	if (id0 == 6 && id1 == 0 && handle == 0xffff8001)
-	{
-		*out -= elf_area_size;
-	}
-	
-	return ret;
-}
-
 void SaltySDCore_PatchSVCs()
 {
 	Result ret;
 	static u8 orig_1[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x00, 0x00, 0xD4}; //STR [sp, #-0x10]!; SVC #0x1
-	static u8 orig_2[0x8] = {0xE0, 0x0F, 0x1F, 0xF8, 0x21, 0x05, 0x00, 0xD4}; //STR [sp, #-0x10]!; SVC #0x29
 	const u8 nop[0x4] = {0x1F, 0x20, 0x03, 0xD5}; // NOP
 	static u8 patch[0x10] = {0x44, 0x00, 0x00, 0x58, 0x80, 0x00, 0x1F, 0xD6, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0}; // LDR X4 #8; BR X4; ADRP X15, #0x1FE03000; ADRP X15, #0x1FE03000
 	u64 dst_1 = SaltySDCore_findCode(orig_1, 8);
-	u64 dst_2 = SaltySDCore_findCode(orig_2, 8);
 	
-	if (!dst_1 || !dst_2)
+	if (!dst_1)
 	{
-		SaltySDCore_printf("SaltySD Core: Failed to find svcGetInfo and svcGetHeapSize! %llx, %llx\n", dst_1, dst_2);
+		SaltySDCore_printf("SaltySD Core: Failed to find svcSetInfo and svcSetHeapSize! %llx\n", dst_1);
 		return;
 	}
 
@@ -289,25 +273,6 @@ void SaltySDCore_PatchSVCs()
 	else
 	{
 		ret = SaltySD_Memcpy(dst_1, (u64)patch, 0x10);
-	}
-	if (ret) debug_log("svcSetHeapSize memcpy failed!\n");
-	
-	*(u64*)&patch[8] = (u64)svcGetInfoIntercept;
-	if (dst_2 & 4)
-	{
-		ret = SaltySD_Memcpy(dst_2, (u64)nop, 0x4);
-		if (ret)
-		{
-			debug_log("svcSetHeapSize memcpy failed!\n");
-		}
-		else
-		{
-			ret = SaltySD_Memcpy(dst_2+4, (u64)patch, 0x10);
-		}
-	}
-	else
-	{
-		ret = SaltySD_Memcpy(dst_2, (u64)patch, 0x10);
 	}
 	if (ret) debug_log("svcSetHeapSize memcpy failed!\n");
 }
