@@ -111,23 +111,6 @@ void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
 	svcCloseHandle(*debug);
 }
 
-void RemoveChars(char *s, char c)
-{
-    int writer = 0, reader = 0;
-
-    while (s[reader])
-    {
-        if (s[reader]!=c) 
-        {   
-            s[writer++] = s[reader];
-        }
-
-        reader++;       
-    }
-
-    s[writer]=0;
-}
-
 void hijack_pid(u64 pid)
 {
 	Result ret;
@@ -225,11 +208,11 @@ void hijack_pid(u64 pid)
 				goto abort_bootstrap;
 			}
 			SaltySD_printf("SaltySD: found valid AttachProcess event:\n");
-			SaltySD_printf("         tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
-			SaltySD_printf("         name %s\n", eventinfo.name);
-			SaltySD_printf("         isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
-			SaltySD_printf("         enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
-			SaltySD_printf("         exception %016llx\n", eventinfo.userExceptionContextAddr);
+			SaltySD_printf("		 tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
+			SaltySD_printf("		 name %s\n", eventinfo.name);
+			SaltySD_printf("		 isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
+			SaltySD_printf("		 enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
+			SaltySD_printf("		 exception %016llx\n", eventinfo.userExceptionContextAddr);
 			if (!eventinfo.isA64)
 			{
 				SaltySD_printf("SaltySD: ARM32 applications plugins are not supported, aborting bootstrap...\n");
@@ -536,73 +519,73 @@ void serviceThread(void* buf)
 
 Result fsp_init(Service fsp)
 {
-    Result rc;
-    IpcCommand c;
-    ipcInitialize(&c);
-    ipcSendPid(&c);
+	Result rc;
+	IpcCommand c;
+	ipcInitialize(&c);
+	ipcSendPid(&c);
 
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u64 unk;
-    } *raw;
+	struct {
+		u64 magic;
+		u64 cmd_id;
+		u64 unk;
+	} *raw;
 
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
+	raw = ipcPrepareHeader(&c, sizeof(*raw));
 
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 1;
-    raw->unk = 0;
+	raw->magic = SFCI_MAGIC;
+	raw->cmd_id = 1;
+	raw->unk = 0;
 
-    rc = serviceIpcDispatch(&fsp);
+	rc = serviceIpcDispatch(&fsp);
 
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-        ipcParse(&r);
+	if (R_SUCCEEDED(rc)) {
+		IpcParsedCommand r;
+		ipcParse(&r);
 
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp = r.Raw;
+		struct {
+			u64 magic;
+			u64 result;
+		} *resp = r.Raw;
 
-        rc = resp->result;
-    }
-    
-    return rc;
+		rc = resp->result;
+	}
+	
+	return rc;
 }
 
 Result fsp_getSdCard(Service fsp, Handle* out)
 {
-    Result rc;
-    IpcCommand c;
-    ipcInitialize(&c);
+	Result rc;
+	IpcCommand c;
+	ipcInitialize(&c);
 
-    struct {
-        u64 magic;
-        u64 cmd_id;
-    } *raw;
+	struct {
+		u64 magic;
+		u64 cmd_id;
+	} *raw;
 
-    raw = ipcPrepareHeader(&c, sizeof(*raw));
+	raw = ipcPrepareHeader(&c, sizeof(*raw));
 
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 18;
+	raw->magic = SFCI_MAGIC;
+	raw->cmd_id = 18;
 
-    rc = serviceIpcDispatch(&fsp);
+	rc = serviceIpcDispatch(&fsp);
 
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-        ipcParse(&r);
+	if (R_SUCCEEDED(rc)) {
+		IpcParsedCommand r;
+		ipcParse(&r);
 
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp = r.Raw;
+		struct {
+			u64 magic;
+			u64 result;
+		} *resp = r.Raw;
 
-        *out = r.Handles[0];
+		*out = r.Handles[0];
 
-        rc = resp->result;
-    }
-    
-    return rc;
+		rc = resp->result;
+	}
+	
+	return rc;
 }
 
 int main(int argc, char *argv[])
@@ -611,8 +594,8 @@ int main(int argc, char *argv[])
 	svcSleepThread(1*1000*1000*1000);
 	smInitialize();
 
-    Service toget;
-    smGetService(&toget, "fsp-srv");
+	Service toget;
+	smGetService(&toget, "fsp-srv");
 	fsp_init(toget);
 	fsp_getSdCard(toget, &sdcard);
 	SaltySD_printf("SaltySD: got SD card dev.\n");

@@ -25,9 +25,9 @@ include $(DEVKITPRO)/libnx/switch_rules
 # APP_TITLEID is the titleID of the app stored in the .nacp file (Optional)
 # ICON is the filename of the icon (.jpg), relative to the project folder.
 #   If not set, it attempts to use one of the following (in this order):
-#     - <Project name>.jpg
-#     - icon.jpg
-#     - <libnx folder>/default_icon.jpg
+#	 - <Project name>.jpg
+#	 - icon.jpg
+#	 - <libnx folder>/default_icon.jpg
 #---------------------------------------------------------------------------------
 TARGET		:=	saltysd_proc
 BUILD		:=	build

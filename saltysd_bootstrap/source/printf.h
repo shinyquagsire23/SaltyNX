@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // \author (c) Marco Paland (info@paland.com)
-//             2014-2018, PALANDesign Hannover, Germany
+//			 2014-2018, PALANDesign Hannover, Germany
 //
 // \license The MIT License (MIT)
 //
@@ -23,9 +23,9 @@
 // THE SOFTWARE.
 //
 // \brief Tiny printf, sprintf and snprintf implementation, optimized for speed on
-//        embedded systems with a very limited resources.
-//        Use this instead of bloated standard/newlib printf.
-//        These routines are thread safe and reentrant.
+//		embedded systems with a very limited resources.
+//		Use this instead of bloated standard/newlib printf.
+//		These routines are thread safe and reentrant.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -78,7 +78,7 @@ int sprintf_(char* buffer, const char* format, ...);
  * \param count The maximum number of characters to store in the buffer, including a terminating null character
  * \param format A string that specifies the format of the output
  * \return The number of characters that are WRITTEN into the buffer, not counting the terminating null character
- *         If the formatted string is truncated the buffer size (count) is returned
+ *		 If the formatted string is truncated the buffer size (count) is returned
  */
 #define snprintf  snprintf_
 #define vsnprintf vsnprintf_

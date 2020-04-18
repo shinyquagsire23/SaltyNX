@@ -5,7 +5,7 @@ PHDRS
 {
 	code   PT_LOAD FLAGS(5) /* Read | Execute */;
 	data   PT_LOAD FLAGS(6) /* Read | Write */;
-	dyn    PT_DYNAMIC;
+	dyn	PT_DYNAMIC;
 }
 
 SECTIONS
@@ -16,7 +16,7 @@ SECTIONS
 
 	.text :
 	{
-	    KEEP (*(.crt0))
+		KEEP (*(.crt0))
 		. = ALIGN(8);
 		
 		KEEP( *(.init) )
@@ -46,21 +46,21 @@ SECTIONS
 		. = ALIGN(8);
 	} :code
 
-	.eh_frame_hdr     : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } :code
-	.eh_frame         : ONLY_IF_RO { KEEP (*(.eh_frame)) *(.eh_frame.*) } :code
+	.eh_frame_hdr	 : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } :code
+	.eh_frame		 : ONLY_IF_RO { KEEP (*(.eh_frame)) *(.eh_frame.*) } :code
 	.gcc_except_table : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) } :code
-	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } : rodata
+	.gnu_extab		: ONLY_IF_RO { *(.gnu_extab*) } : rodata
 
-	.dynamic           : { *(.dynamic) } :dyn
-	.dynsym            : { *(.dynsym) } :dyn
-	.dynstr            : { *(.dynstr) } :dyn
-	.rela.dyn          : { *(.rela.*) } :dyn
-	.interp            : { *(.interp) } :dyn
-	.hash              : { *(.hash) } :dyn
-	.gnu.hash          : { *(.gnu.hash) } :dyn
-	.gnu.version       : { *(.gnu.version) } :dyn
-	.gnu.version_d     : { *(.gnu.version_d) } :dyn
-	.gnu.version_r     : { *(.gnu.version_r) } :dyn
+	.dynamic		   : { *(.dynamic) } :dyn
+	.dynsym			: { *(.dynsym) } :dyn
+	.dynstr			: { *(.dynstr) } :dyn
+	.rela.dyn		  : { *(.rela.*) } :dyn
+	.interp			: { *(.interp) } :dyn
+	.hash			  : { *(.hash) } :dyn
+	.gnu.hash		  : { *(.gnu.hash) } :dyn
+	.gnu.version	   : { *(.gnu.version) } :dyn
+	.gnu.version_d	 : { *(.gnu.version_d) } :dyn
+	.gnu.version_r	 : { *(.gnu.version_r) } :dyn
 	.note.gnu.build-id : { *(.note.gnu.build-id) } :code
 
 	/* =========== DATA section =========== */
@@ -126,8 +126,8 @@ SECTIONS
 
 	__got_start__ = .;
 
-	.got            : { *(.got) *(.igot) } :data
-	.got.plt        : { *(.got.plt)  *(.igot.plt) } :data
+	.got			: { *(.got) *(.igot) } :data
+	.got.plt		: { *(.got.plt)  *(.igot.plt) } :data
 
 	__got_end__ = .;
 

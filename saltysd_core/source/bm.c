@@ -18,39 +18,39 @@
 // this algorithm runs in alphabet_len+patlen time.
 static void make_delta1(int *delta1, uint8_t *pat, int patlen)
 {
-    int i;
-    for (i=0; i < ALPHABET_LEN; i++) {
-        delta1[i] = NOT_FOUND;
-    }
-    for (i=0; i < patlen-1; i++) {
-        delta1[pat[i]] = patlen-1 - i;
-    }
+	int i;
+	for (i=0; i < ALPHABET_LEN; i++) {
+		delta1[i] = NOT_FOUND;
+	}
+	for (i=0; i < patlen-1; i++) {
+		delta1[pat[i]] = patlen-1 - i;
+	}
 }
 
 // true if the suffix of word starting from word[pos] is a prefix 
 // of word
 static int is_prefix(uint8_t *word, int wordlen, int pos)
 {
-    int i;
-    int suffixlen = wordlen - pos;
-    // could also use the strncmp() library function here
-    for (i = 0; i < suffixlen; i++) {
-        if (word[i] != word[pos+i]) {
-            return 0;
-        }
-    }
-    return 1;
+	int i;
+	int suffixlen = wordlen - pos;
+	// could also use the strncmp() library function here
+	for (i = 0; i < suffixlen; i++) {
+		if (word[i] != word[pos+i]) {
+			return 0;
+		}
+	}
+	return 1;
 }
 
 // length of the longest suffix of word ending on word[pos].
 // suffix_length("dddbcabc", 8, 4) = 2
 static int suffix_length(uint8_t *word, int wordlen, int pos)
 {
-    int i;
-    // increment suffix length i to the first mismatch or beginning
-    // of the word
-    for (i = 0; (word[pos-i] == word[wordlen-1-i]) && (i < pos); i++);
-    return i;
+	int i;
+	// increment suffix length i to the first mismatch or beginning
+	// of the word
+	for (i = 0; (word[pos-i] == word[wordlen-1-i]) && (i < pos); i++);
+	return i;
 }
 
 // delta2 table: given a mismatch at pat[pos], we want to align 
@@ -90,49 +90,49 @@ static int suffix_length(uint8_t *word, int wordlen, int pos)
 // how far away the closest potential match is.
 static void make_delta2(int *delta2, uint8_t *pat, int patlen)
 {
-    int p;
-    int last_prefix_index = patlen-1;
+	int p;
+	int last_prefix_index = patlen-1;
 
-    // first loop
-    for (p=patlen-1; p>=0; p--) {
-        if (is_prefix(pat, patlen, p+1)) {
-            last_prefix_index = p+1;
-        }
-        delta2[p] = last_prefix_index + (patlen-1 - p);
-    }
+	// first loop
+	for (p=patlen-1; p>=0; p--) {
+		if (is_prefix(pat, patlen, p+1)) {
+			last_prefix_index = p+1;
+		}
+		delta2[p] = last_prefix_index + (patlen-1 - p);
+	}
 
-    // second loop
-    for (p=0; p < patlen-1; p++) {
-        int slen = suffix_length(pat, patlen, p);
-        if (pat[p - slen] != pat[patlen-1 - slen]) {
-            delta2[patlen-1 - slen] = patlen-1 - p + slen;
-        }
-    }
+	// second loop
+	for (p=0; p < patlen-1; p++) {
+		int slen = suffix_length(pat, patlen, p);
+		if (pat[p - slen] != pat[patlen-1 - slen]) {
+			delta2[patlen-1 - slen] = patlen-1 - p + slen;
+		}
+	}
 }
 
 void* boyer_moore_search(void *string, int stringlen, void *pat, int patlen)
 {
-    int i;
-    int delta1[ALPHABET_LEN];
-    int delta2[patlen * sizeof(int)];
-    uint8_t* str8 = (uint8_t*)string;
-    uint8_t* pat8 = (uint8_t*)pat;
-    make_delta1(delta1, pat8, patlen);
-    make_delta2(delta2, pat8, patlen);
+	int i;
+	int delta1[ALPHABET_LEN];
+	int delta2[patlen * sizeof(int)];
+	uint8_t* str8 = (uint8_t*)string;
+	uint8_t* pat8 = (uint8_t*)pat;
+	make_delta1(delta1, pat8, patlen);
+	make_delta2(delta2, pat8, patlen);
 
-    i = patlen-1;
-    while (i < stringlen) {
-        int j = patlen-1;
-        while (j >= 0 && (str8[i] == pat8[j])) {
-            --i;
-            --j;
-        }
-        if (j < 0) {
-            return (str8 + i+1);
-        }
+	i = patlen-1;
+	while (i < stringlen) {
+		int j = patlen-1;
+		while (j >= 0 && (str8[i] == pat8[j])) {
+			--i;
+			--j;
+		}
+		if (j < 0) {
+			return (str8 + i+1);
+		}
 
-        //i += max(delta1[str8[i]], delta2[j]);
-        i += (delta1[str8[i]]<delta2[j])?delta2[j]:delta1[str8[i]];
-    }
-    return NULL;
+		//i += max(delta1[str8[i]], delta2[j]);
+		i += (delta1[str8[i]]<delta2[j])?delta2[j]:delta1[str8[i]];
+	}
+	return NULL;
 }
