@@ -372,10 +372,11 @@ void SaltySDCore_LoadPlugins()
 		SaltySDCore_DynamicLinkModule(entries[i]);
 		elf_trampoline(orig_ctx, orig_main_thread, entries[i]);
 	}
-	if (num_elfs)
-		free(entries);
-	
 	free(tmp);
+	if (num_elfs) free(entries);
+	else SaltySDCore_printf("SaltySD Core: Plugins not detected...\n");
+	
+	return;
 }
 
 int main(int argc, char *argv[])
@@ -403,7 +404,10 @@ int main(int argc, char *argv[])
 
 	SaltySDCore_LoadPatches(true);
 	SaltySDCore_PatchSVCs();
-	SaltySDCore_LoadPlugins();
+	
+	Result exc = SaltySD_Exception();
+	if (exc == 0x0) SaltySDCore_LoadPlugins();
+	else SaltySDCore_printf("SaltySD Core: Detected exception title, aborting loading plugins...\n");
 
 	ret = SaltySD_Deinit();
 	if (ret) goto fail;

@@ -25,6 +25,7 @@ bool should_terminate = false;
 bool already_hijacking = false;
 DebugEventInfo eventinfo;
 bool check = false;
+u64 exception = 0x0;
 
 void __libnx_initheap(void)
 {
@@ -191,14 +192,15 @@ void hijack_pid(u64 pid)
 					int thesame2 = strcasecmp(exceptions, titleidnumn);
 					int thesame3 = strcasecmp(exceptions, titleidnumrn);
 					if ((thesame == 0) || (thesame2 == 0) || (thesame3 == 0)) {
-						SaltySD_printf("SaltySD: TID %016llx is in exceptions.txt, aborting bootstrap...\n", eventinfo.tid);
+						SaltySD_printf("SaltySD: TID %016llx is in exceptions.txt, aborting loading plugins...\n", eventinfo.tid);
 						fclose(except);
-						goto abort_bootstrap;
+						exception = 0x1;
 					}
 					else {
 						thesame = 0;
 						thesame2 = 0;
 						thesame3 = 0;
+						exception = 0;
 					}	
 				}
 				fclose(except);
@@ -440,6 +442,25 @@ Result handleServiceCmd(int cmd)
 		SaltySD_printf(resp->log);
 
 		ret = 0;
+	}
+	else if (cmd == 9) // Exception
+	{
+		IpcParsedCommand r = {0};
+		ipcParse(&r);
+		
+		// Ship off results
+		struct {
+			u64 magic;
+			u64 result;
+			u64 reserved[2];
+		} *raw;
+
+		raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+		raw->magic = SFCO_MAGIC;
+		raw->result = exception;
+
+		return 0;
 	}
 	else
 	{

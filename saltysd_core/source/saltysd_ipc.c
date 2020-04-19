@@ -208,6 +208,45 @@ Result SaltySD_Memcpy(u64 to, u64 from, u64 size)
 	return ret;
 }
 
+Result SaltySD_Exception()
+{
+	Result ret;
+	IpcCommand c;
+
+	ipcInitialize(&c);
+	ipcSendPid(&c);
+
+	struct 
+	{
+		u64 magic;
+		u64 cmd_id;
+		u32 reserved[4];
+	} *raw;
+
+	raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+	raw->magic = SFCI_MAGIC;
+	raw->cmd_id = 9;
+
+	ret = ipcDispatch(saltysd);
+
+	if (R_SUCCEEDED(ret)) 
+	{
+		IpcParsedCommand r;
+		ipcParse(&r);
+
+		struct {
+			u64 magic;
+			u64 result;
+			u64 reserved[2];
+		} *resp = r.Raw;
+
+		ret = resp->result;
+	}
+
+	return ret;
+}
+
 Result SaltySD_GetSDCard(Handle *retrieve)
 {
 	Result ret = 0;
