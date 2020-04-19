@@ -36,6 +36,7 @@ sdcard_out/atmosphere/contents/0000000000534C56/exefs.nsp: saltysd_proc/saltysd_
 	@cp $< $@
 	@touch sdcard_out/atmosphere/contents/0000000000534C56/flags/boot2.flag
 	@mkdir -p sdcard_out/SaltySD/flags/
+	@mkdir -p sdcard_out/SaltySD/patches/
 	@touch sdcard_out/SaltySD/flags/log.flag
 	@cp exceptions.txt sdcard_out/SaltySD/exceptions.txt
 	@cp toolbox.json sdcard_out/atmosphere/contents/0000000000534C56/toolbox.json
