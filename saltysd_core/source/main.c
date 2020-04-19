@@ -161,7 +161,7 @@ void SaltySDCore_LoadPatches (bool Aarch64) {
 	
 	SaltySDCore_printf("SaltySD Patcher: Searching patches in dir '/%016llx'...\n", tid);
 	
-	snprintf(tmp4, 0x100, "sdmc:/SaltySD/patches/%016"PRIx64, tid);
+	snprintf(tmp4, 0x100, "sdmc:/SaltySD/patches/%016" PRIx64 "/", tid);
 
 	d = opendir(tmp4);
 	if (d)
