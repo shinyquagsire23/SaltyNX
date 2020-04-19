@@ -12,11 +12,11 @@
 
 ;Tesla Menu
 ;Just in case (old titleid, new one is blacklisted by internal titleid validating)
-010000000007E51A
+X010000000007E51A
 
 ;YouTube
 ;Stucks in infinite loop
-01003A400C3DA000
+X01003A400C3DA000
 
 ;Alien: Isolation
 ;1.1_46609 - 1.1.2_47610 crashes on first loading
