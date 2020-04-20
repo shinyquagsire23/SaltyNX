@@ -3,11 +3,9 @@ Background process for the Nintendo Switch for file/code modification
 
 Created by: https://github.com/shinyquagsire23
 
-This fork includes many QoL improvements
+This fork includes many QoL improvements and beside plugins support also supports patches.
 
 ---
-
-This fork of SaltyNX includes beside plugins support also patches support.
 
 Patches pattern:
 - filename is symbol of function with filetype `.asm64`,
