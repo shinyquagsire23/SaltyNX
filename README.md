@@ -7,7 +7,14 @@ This fork includes many QoL improvements
 
 ---
 
-For additional functions you need SaltyNX-Tool (if you are using ReverseNX-Tool, it has all functions already integrated from 1.35)
+This fork of SaltyNX includes beside plugins support also patches support.
+
+Patches pattern:
+- filename is symbol of function with filetype `.asm64`,
+- inside file write with hex editor instructions that you want to overwrite for this function,
+- put this file either to `SaltySD/patches` to make it work for every game, or to `SaltySD/patches/*titleid*` to make it work for specific game.
+
+For additional functions you need SaltyNX-Tool
 
 https://github.com/masagrator/SaltyNX-Tool
 
@@ -39,7 +46,7 @@ Remember to restart Switch
 
 ---
 
-List of not compatible titles:
+List of titles not compatible with plugins:
 
 | Title | Version(s) | Why? |
 | ------------- | ------------- | ------------- |
@@ -61,6 +68,6 @@ List of not compatible titles:
 | Valkyria Chronicles | all | 32-bit game, not supported |
 | YouTube | all | Unknown |
 
-Titles other than 32-bit are added to exceptions.txt which is treated as Black list, you can find it in root of repo. SaltyNX reads it from SaltySD folder.
+Titles other than 32-bit are added to exceptions.txt which is treated as Black list, you can find it in root of repo. SaltyNX reads it from SaltySD folder. `X` at the beginning of titleid means that this game will not load any patches and plugins.
 
 32-bit games are ignored by default.
