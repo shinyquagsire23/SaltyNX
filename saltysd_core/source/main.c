@@ -398,16 +398,13 @@ void** SaltySDCore_LoadPluginsInDir(char* path, void** entries, size_t* num_elfs
 			{
 				u64 elf_addr, elf_size;
 				setupELFHeap();
-				SaltySDCore_printf("SaltySD Core: Passed 1...\n");
 				snprintf(tmp, 0x100, "%s%s", path, dir->d_name);
 				SaltySD_LoadELF(find_next_elf_heap(), &elf_addr, &elf_size, tmp);
-				SaltySDCore_printf("SaltySD Core: Passed 2...\n");
 				*num_elfs = *num_elfs + 1;
 				entries = realloc(entries, *num_elfs * sizeof(void*));
 				entries[*num_elfs-1] = (void*)elf_addr;
 
 				SaltySDCore_RegisterModule(entries[*num_elfs-1]);
-				SaltySDCore_printf("SaltySD Core: Passed 3...\n");
 				elf_area_size += elf_size;
 			}
 		}
@@ -427,9 +424,7 @@ void SaltySDCore_LoadPlugins()
 	size_t num_elfs = 0;
 	
 	entries = SaltySDCore_LoadPluginsInDir("", entries, &num_elfs);
-	SaltySDCore_printf("SaltySD Core: Passed 4...\n");
 	snprintf(tmp3, 0x20, "%016" PRIx64, tid);
-	SaltySDCore_printf("SaltySD Core: Passed 5...\n");
 	entries = SaltySDCore_LoadPluginsInDir(tmp3, entries, &num_elfs);
 	
 	for (int i = 0; i < num_elfs; i++)
