@@ -177,7 +177,7 @@ void hijack_pid(u64 pid)
 		if (eventinfo.type == DebugEvent_AttachProcess)
 		{
 			if (disable == 1) {
-				SaltySD_printf("SaltySD: Detected disable.flag, aborting bootstrap and patches...\n");
+				SaltySD_printf("SaltySD: Detected disable.flag, aborting bootstrap...\n");
 				goto abort_bootstrap;
 			}
 
