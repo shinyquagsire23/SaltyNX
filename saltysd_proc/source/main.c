@@ -177,7 +177,7 @@ void hijack_pid(u64 pid)
 		if (eventinfo.type == DebugEvent_AttachProcess)
 		{
 			if (disable == 1) {
-				SaltySD_printf("SaltySD: Detected disable.flag, aborting bootstrap...\n");
+				SaltySD_printf("SaltySD: Detected disable.flag, aborting bootstrap and patches...\n");
 				goto abort_bootstrap;
 			}
 
@@ -196,6 +196,12 @@ void hijack_pid(u64 pid)
 				SaltySD_printf("SaltySD: ARM32 applications plugins are not supported, aborting bootstrap...\n");
 				goto abort_bootstrap;
 			}
+			char* hbloader = "hbloader";
+			if (strcasecmp(eventinfo.name, hbloader) == 0)
+			{
+				SaltySD_printf("SaltySD: Detected title replacement mode, aborting bootstrap...\n");
+				goto abort_bootstrap;
+			}
 			
 			snprintf(titleidnum, sizeof titleidnum, "%016"PRIx64, eventinfo.tid);
 			snprintf(titleidnumn, sizeof titleidnumn, "%016"PRIx64"\n", eventinfo.tid);
@@ -208,14 +214,14 @@ void hijack_pid(u64 pid)
 			if (except) {
 				while (fgets(line, sizeof(line), except)) {
 					snprintf(exceptions, sizeof exceptions, "%s", line); 
-					int thesame =  strcasecmp(exceptions, titleidnum);
+					int thesame = strcasecmp(exceptions, titleidnum);
 					int thesame2 = strcasecmp(exceptions, titleidnumn);
 					int thesame3 = strcasecmp(exceptions, titleidnumrn);
-					int thesame4 =  strcasecmp(exceptions, titleidnumF);
+					int thesame4 = strcasecmp(exceptions, titleidnumF);
 					int thesame5 = strcasecmp(exceptions, titleidnumnF);
 					int thesame6 = strcasecmp(exceptions, titleidnumrnF);
 					if ((thesame4 == 0) || (thesame5 == 0) || (thesame6 == 0)) {
-						SaltySD_printf("SaltySD: TID %016llx is forced in exceptions.txt, aborting loading plugins...\n", eventinfo.tid);
+						SaltySD_printf("SaltySD: TID %016llx is forced in exceptions.txt, aborting bootstrap...\n", eventinfo.tid);
 						fclose(except);
 						goto abort_bootstrap;
 					}
