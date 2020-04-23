@@ -27,7 +27,8 @@ Clean Kosmos crashes SaltyNX because of too much sysmodules. You need to delete 
 Known issues:
 - Instability with some homebrews and sysmodules,
 - You need to have at least Hekate 5.0.2 if you don't want issues related to Hekate,
-- 32 bit games are unsupported.
+- 32 bit games are unsupported,
+- Cheats using directly heap addresses may not work.
 
 # How to download release:
 
