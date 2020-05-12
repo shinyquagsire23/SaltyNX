@@ -79,5 +79,5 @@ endif
 #---------------------------------------------------------------------------------
 %.elf:
 	@echo linking $(notdir $@)
-	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) $(DEVKITPRO)/devkitA64/aarch64-none-elf/lib/libc.a -o $@
 	@$(NM) -CSn $@ > $(notdir $*.lst)
