@@ -19,7 +19,7 @@ X010000000007E51A
 X01003A400C3DA000
 
 ;Alien: Isolation
-;1.1_46609 - 1.1.3_48479 crashes on first loading
+;1.1_46609 - 1.1.3_48479 crash on first loading
 010075D00E8BA000
 
 ;FIFA 20
