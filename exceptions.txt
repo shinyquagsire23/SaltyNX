@@ -19,7 +19,7 @@ X010000000007E51A
 X01003A400C3DA000
 
 ;Alien: Isolation
-;1.1_46609 - 1.1.2_47610 crashes on first loading
+;1.1_46609 - 1.1.3_48479 crashes on first loading
 010075D00E8BA000
 
 ;FIFA 20
@@ -29,3 +29,7 @@ X01003A400C3DA000
 ;Little Busters! Converted Edition
 ;1.0.0 crashes
 0100943010310000
+
+;Grandia Collection
+;Only launcher is 64-bit, games are 32-bit
+0100E0600BBC8000
