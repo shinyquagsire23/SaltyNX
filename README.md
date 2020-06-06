@@ -47,19 +47,19 @@ Remember to restart Switch
 
 ---
 
-List of titles not compatible with plugins:
+List of titles not compatible with plugins/patches:
 
-| Title | Version(s) | Why? |
+| Title | plugins/all | Why? |
 | ------------- | ------------- | ------------- |
-| Alien: Isolation | all | Heap related |
+| Alien: Isolation | plugins | Heap related |
 | Azure Striker Gunvolt: Striker Pack | all | 32-bit game, not supported |
-| Darksiders 2 | 1.0.0 | Heap related |
-| FIFA 20 | 1.0.0 - 1.0.3 | Heap related |
+| Darksiders 2 | plugins | Heap related |
+| FIFA 20 | plugins | Heap related |
 | Goat Simulator | all | 32-bit game, not supported |
 | Grandia Collection | all | Only launcher is 64-bit, games are 32-bit |
-| Grid: Autosport | 1.4.0-1.5.0 | Heap related |
-| Little Busters! Converted Edition | 1.0.0 | Heap related |
-| Luigi's Mansion 3 | 1.0.0-1.3.0 | Heap related |
+| Grid: Autosport | plugins | Heap related |
+| Little Busters! Converted Edition | plugins | Heap related |
+| Luigi's Mansion 3 | plugins | Heap related |
 | Mario Kart 8 | all | 32-bit game, not supported |
 | Megadimension Neptunia VII | all | 32-bit game, not supported |
 | Monster Hunter Generations Ultimate | all | 32-bit game, not supported |
@@ -68,7 +68,8 @@ List of titles not compatible with plugins:
 | Planescape: Torment and Icewind Dale | all | 32-bit game, not supported |
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
 | Valkyria Chronicles | all | 32-bit game, not supported |
-| YouTube | all | Unknown |
+| XCOM 2 Collection | all | Only launcher is detected, XCOM 2 and X-COM 2 War is chosen are loaded with separate exefs not detected by SaltyNX  |
+| YouTube | plugins | Unknown |
 
 Titles other than 32-bit are added to exceptions.txt which is treated as Black list, you can find it in root of repo. SaltyNX reads it from SaltySD folder. `X` at the beginning of titleid means that this game will not load any patches and plugins.
 
