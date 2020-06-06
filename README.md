@@ -68,7 +68,6 @@ List of titles not compatible with plugins/patches:
 | Planescape: Torment and Icewind Dale | all | 32-bit game, not supported |
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
 | Valkyria Chronicles | all | 32-bit game, not supported |
-| XCOM 2 Collection | all | Only launcher is detected, XCOM 2 and X-COM 2 War of The Chosen are loaded with separate exefs not detected by SaltyNX  |
 | YouTube | plugins | Unknown |
 
 Titles other than 32-bit are added to exceptions.txt which is treated as Black list, you can find it in root of repo. SaltyNX reads it from SaltySD folder. `X` at the beginning of titleid means that this game will not load any patches and plugins.
