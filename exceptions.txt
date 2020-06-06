@@ -36,4 +36,4 @@ X01003A400C3DA000
 
 ;XCOM 2 COLLECTION
 ;Only launcher is detected, XCOM 2 and X-COM 2 War of The Chosen are loaded with separate exefs not detected by SaltyNX
-0100D0B00FB74000
+X0100D0B00FB74000
