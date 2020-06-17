@@ -186,7 +186,7 @@ void hijack_pid(u64 pid)
 				SaltySD_printf("SaltySD: TID %016llx is a system application, aborting bootstrap...\n", eventinfo.tid);
 				goto abort_bootstrap;
 			}
-			if (eventinfo.tid > 0x01FFFFFFFFFFE000)
+			if (eventinfo.tid > 0x01FFFFFFFFFFFFFF || (eventinfo.tid & 0x1F00) == 0)
 			{
 				SaltySD_printf("SaltySD: TID %016llx is a homebrew application, aborting bootstrap...\n", eventinfo.tid);
 				goto abort_bootstrap;
