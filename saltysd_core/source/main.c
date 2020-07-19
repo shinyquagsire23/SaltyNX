@@ -424,7 +424,7 @@ void SaltySDCore_LoadPlugins()
 	size_t num_elfs = 0;
 	
 	entries = SaltySDCore_LoadPluginsInDir("", entries, &num_elfs);
-	snprintf(tmp3, 0x20, "%016" PRIx64, tid);
+	snprintf(tmp3, 0x20, "%016" PRIx64 "/", tid);
 	entries = SaltySDCore_LoadPluginsInDir(tmp3, entries, &num_elfs);
 	
 	for (int i = 0; i < num_elfs; i++)
