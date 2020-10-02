@@ -63,6 +63,8 @@ List of titles not compatible with plugins/patches:
 | Luigi's Mansion 3 | plugins | Heap related |
 | Mario Kart 8 | all | 32-bit game, not supported |
 | Megadimension Neptunia VII | all | 32-bit game, not supported |
+| Moero Chronicle Hyper | all | 32-bit game, not supported |
+| Moero Crystal H | all | 32-bit game, not supported |
 | Monster Hunter Generations Ultimate | all | 32-bit game, not supported |
 | New Super Mario Bros. U Deluxe | all | 32-bit game, not supported |
 | Ni no Kuni: Wrath of the White Witch | all | 32-bit game, not supported |
