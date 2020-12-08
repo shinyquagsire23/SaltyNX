@@ -237,7 +237,7 @@ void setupELFHeap(void)
 	void* addr = NULL;
 	Result rc = 0;
 
-	rc = svcSetHeapSize(&addr, ((elf_area_size+0x200000+0x200000) & 0xffe00000));
+	rc = svcSetHeapSize(&addr, ((elf_area_size+0x200000) & 0xffe00000));
 
 	if (rc || addr == NULL)
 	{
@@ -245,7 +245,7 @@ void setupELFHeap(void)
 	}
 
 	g_heapAddr = (u64)addr;
-	g_heapSize = ((elf_area_size+0x100000+0x200000) & 0xffe00000);
+	g_heapSize = ((elf_area_size+0x200000) & 0xffe00000);
 }
 
 u64 find_next_elf_heap()
