@@ -26,10 +26,6 @@ X01003A400C3DA000
 ;1.0.0 - 1.0.3 after checking Nintendo servers are abruptly closes and don't close all services, which results in game crash and high chance of OS crash at boot of next title
 01005DE00D05C000
 
-;Little Busters! Converted Edition
-;1.0.0 crashes
-0100943010310000
-
 ;Grandia Collection
 ;Only launcher is 64-bit, games are 32-bit
 0100E0600BBC8000
