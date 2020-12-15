@@ -65,8 +65,6 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
 
 void __attribute__((weak)) __libnx_exit(int rc)
 {
-	fsdevUnmountAll();
-
 	// Call destructors.
 	void __libc_fini_array(void);
 	__libc_fini_array();
@@ -303,7 +301,7 @@ Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 	
 	if (!ret)
 	{
-		*out += elf_area_size;
+		*out += 0x200000;
 	}
 	
 	return ret;
