@@ -16,9 +16,7 @@ For additional functions you need SaltyNX-Tool
 
 https://github.com/masagrator/SaltyNX-Tool
 
-Tests were done on FW 7.0.1-10.2.0, Atmosphere 0.9.1-0.9.4, 0.10.1-0.10.4, 0.11.1-0.13.0, 0.14.4
-
-It should work with ReinX too.
+Tests were done on FW 7.0.1-10.2.0, Atmosphere 0.9.1-0.9.4, 0.10.1-0.10.4, 0.11.1-0.13.0, 0.14.4-M.15.0
 
 SX OS older than 2.9 are not working. Tested only on sysNAND 9.0.0, 2.9.2
 
@@ -26,6 +24,7 @@ No technical support for:
 - Atmosphere forks
 - SX OS
 - Kosmos
+- ReinX
 
 Known issues:
 - Instability with some homebrews and sysmodules,
@@ -40,8 +39,6 @@ For Atmosphere >=0.10.1 just put folders from archive to root of your sdcard.
 For Atmosphere <=0.9.4 and any other CFW rename `contents` folder to `titles`
 
 For SX OS remember to rename `atmosphere` folder to `sxos`
-
-For ReinX remember to rename `atmosphere` folder to `reinx`
 
 Remember to restart Switch
 
