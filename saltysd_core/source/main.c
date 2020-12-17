@@ -1,10 +1,16 @@
 #include <switch_min.h>
 
+#include <string.h>
+#include <stdio.h>
 #include <inttypes.h>
 #include <dirent.h>
+#include <sys/iosupport.h>
+#include <sys/reent.h>
 #include <switch_min/kernel/ipc.h>
 #include <switch_min/runtime/threadvars.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #include "useful.h"
 #include "saltysd_ipc.h"
@@ -51,11 +57,19 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
 	vars_mine.tls_tp = (void*)malloc(0x1000);
 	vars_orig = *getThreadVars();
 	*getThreadVars() = vars_mine;
+	
+	// Call constructors.
+	void __libc_init_array(void);
+	__libc_init_array();
 }
 
 void __attribute__((weak)) __libnx_exit(int rc)
 {
 	fsdevUnmountAll();
+
+	// Call destructors.
+	void __libc_fini_array(void);
+	__libc_fini_array();
 	
 	// Restore TLS stuff
 	*getThreadVars() = vars_orig;
@@ -223,7 +237,7 @@ void setupELFHeap(void)
 	void* addr = NULL;
 	Result rc = 0;
 
-	rc = svcSetHeapSize(&addr, ((elf_area_size+0x200000) & 0xffe00000));
+	rc = svcSetHeapSize(&addr, ((elf_area_size+0x200000+0x200000) & 0xffe00000));
 
 	if (rc || addr == NULL)
 	{
@@ -231,7 +245,7 @@ void setupELFHeap(void)
 	}
 
 	g_heapAddr = (u64)addr;
-	g_heapSize = ((elf_area_size+0x200000) & 0xffe00000);
+	g_heapSize = ((elf_area_size+0x100000+0x200000) & 0xffe00000);
 }
 
 u64 find_next_elf_heap()
@@ -289,7 +303,7 @@ Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 	
 	if (!ret)
 	{
-		*out += ((elf_area_size+0x200000) & 0xffe00000);
+		*out += elf_area_size;
 	}
 	
 	return ret;
@@ -430,6 +444,13 @@ int main(int argc, char *argv[])
 	Result ret;
 
 	debug_log("SaltySD Core: waddup\n");
+
+	// Get our address space in order
+	SaltySDCore_getCodeStart();
+	setupELFHeap();
+	elf_area_size = find_next_elf_heap() - (u64)g_heapAddr;
+	setupELFHeap();
+	
 	SaltySDCore_RegisterExistingModules();
 	
 	SaltySD_Init();
@@ -458,4 +479,3 @@ fail:
 	SaltySDCore_printf("SaltySD Core: failed with retcode %x\n", ret);
 	__libnx_exit(0);
 }
-
