@@ -56,7 +56,6 @@ List of titles not compatible with plugins/patches:
 | Grid: Autosport | plugins | Heap related |
 | Immortals Fenyx Rising | plugins | Heap related |
 | LIMBO | all | 32-bit game, not supported |
-| Little Busters! Converted Edition | plugins | Heap related |
 | Luigi's Mansion 3 | plugins | Heap related |
 | Mario Kart 8 | all | 32-bit game, not supported |
 | Megadimension Neptunia VII | all | 32-bit game, not supported |
