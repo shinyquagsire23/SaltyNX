@@ -1,7 +1,3 @@
-;Darksiders II Deathnitive Edition
-;1.0.0 has double speed gameplay
-010071800BA98000
-
 ;GRID: Autosport
 ;1.4.0RC9, 1.5_46790 and 1.8_49215 crash, 1.4.1_45339 stucks in infinite loop
 0100DC800A602000
@@ -21,10 +17,6 @@ X01003A400C3DA000
 ;Alien: Isolation
 ;1.1_46609 - 1.1.3_48479 crash on first loading
 010075D00E8BA000
-
-;FIFA 20
-;1.0.0 - 1.0.3 after checking Nintendo servers are abruptly closes and don't close all services, which results in game crash and high chance of OS crash at boot of next title
-01005DE00D05C000
 
 ;Grandia Collection
 ;Only launcher is 64-bit, games are 32-bit
