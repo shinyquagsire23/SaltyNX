@@ -67,6 +67,7 @@ List of titles not compatible with plugins/patches:
 | Planescape: Torment and Icewind Dale | all | 32-bit game, not supported |
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
 | Valkyria Chronicles | all | 32-bit game, not supported |
+| World of Goo | all | 32-bit game, not supported |
 | YouTube | plugins | Unknown |
 
 Titles other than 32-bit are added to exceptions.txt which is treated as Black list, you can find it in root of repo. SaltyNX reads it from SaltySD folder. `X` at the beginning of titleid means that this game will not load any patches and plugins.
