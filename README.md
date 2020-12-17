@@ -50,6 +50,7 @@ List of titles not compatible with plugins/patches:
 | ------------- | ------------- | ------------- |
 | Alien: Isolation | plugins | Heap related |
 | Azure Striker Gunvolt: Striker Pack | all | 32-bit game, not supported |
+| Baldur's Gate and Baldur's Gate II: Enhanced Editions | all | 32-bit game, not supported |
 | DEADLY PREMONITION Origins | all | 32-bit game, not supported |
 | Goat Simulator | all | 32-bit game, not supported |
 | Grandia Collection | all | Only launcher is 64-bit, games are 32-bit |
