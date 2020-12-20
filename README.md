@@ -17,6 +17,7 @@ For additional functions you need SaltyNX-Tool
 https://github.com/masagrator/SaltyNX-Tool
 
 Tests were done on FW 7.0.1-10.2.0, Atmosphere 0.9.1-0.9.4, 0.10.1-0.10.4, 0.11.1-0.13.0, 0.14.4-M.16.2
+
 WARNING: SaltyNX 0.4.0a doesn't work correctly on M.16.2. It works on 0.16.2. Issue is investigated.
 
 SX OS older than 2.9 are not working. Tested only on sysNAND 9.0.0, 2.9.2
