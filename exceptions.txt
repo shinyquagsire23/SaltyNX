@@ -25,3 +25,7 @@ X01003A400C3DA000
 ;Immortals Fenyx Rising
 ;1.0.3 crashes
 01004A600EC0A000
+
+;Stubbs the Zombie in Rebel Without a Pulse
+;1.0.0 - 1.0.2 crash on boot
+0100964012528000
