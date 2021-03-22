@@ -27,7 +27,7 @@ No technical support for:
 - ReinX
 
 Known issues:
-- Instability with some homebrews and sysmodules,
+- Instability with some homebrews and sysmodules (like emuiibo),
 - You need to have at least Hekate 5.0.2 if you don't want issues related to Hekate,
 - 32 bit games are unsupported,
 - Cheats using directly heap addresses may not work properly while using plugins.
