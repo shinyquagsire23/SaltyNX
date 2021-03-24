@@ -66,6 +66,7 @@ List of titles not compatible with plugins/patches:
 | Monster Hunter Generations Ultimate | all | 32-bit game, not supported |
 | New Super Mario Bros. U Deluxe | all | 32-bit game, not supported |
 | Ni no Kuni: Wrath of the White Witch | all | 32-bit game, not supported |
+| Pikmin 3 Deluxe | all | 32-bit game, not supported |
 | Planescape: Torment and Icewind Dale | all | 32-bit game, not supported |
 | Stubbs the Zombie in Rebel Without a Pulse | plugins | heap related |
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
