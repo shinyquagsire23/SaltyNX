@@ -68,7 +68,7 @@ List of titles not compatible with plugins/patches:
 | Ni no Kuni: Wrath of the White Witch | all | 32-bit game, not supported |
 | Pikmin 3 Deluxe | all | 32-bit game, not supported |
 | Planescape: Torment and Icewind Dale | all | 32-bit game, not supported |
-| Stubbs the Zombie in Rebel Without a Pulse | plugins | heap related |
+| Stubbs the Zombie in Rebel Without a Pulse | all | heap related |
 | Tokyo Mirage Session #FE Encore | all | 32-bit game, not supported |
 | Valkyria Chronicles | all | 32-bit game, not supported |
 | World of Goo | all | 32-bit game, not supported |
