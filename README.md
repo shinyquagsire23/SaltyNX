@@ -1,4 +1,7 @@
 # SaltyNX
+
+# Atmosphere 0.19.0 switched to new IPC used by 12.0.0 which breaks SaltyNX. SaltyNX currently on Atmosphere 0.19.0+ is broken!!!
+
 Background process for the Nintendo Switch for file/code modification
 
 Created by: https://github.com/shinyquagsire23
