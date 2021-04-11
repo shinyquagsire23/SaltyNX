@@ -1,7 +1,4 @@
 # SaltyNX
-
-# Because of changes in Atmosphere 0.19.0+ to match new IPC introduced in FW 12.0.0 SaltyNX is no longer working!!!
-
 Background process for the Nintendo Switch for file/code modification
 
 Created by: https://github.com/shinyquagsire23

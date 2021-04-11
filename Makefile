@@ -9,10 +9,7 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/devkitA64/base_rules
 
-all: libnx_min/nx/lib/libnx_min.a sdcard_out/SaltySD/saltysd_core.elf sdcard_out/atmosphere/contents/0000000000534C56/exefs.nsp
-
-libnx_min/nx/lib/libnx_min.a:
-	@cd libnx_min && make
+all: sdcard_out/SaltySD/saltysd_core.elf sdcard_out/atmosphere/contents/0000000000534C56/exefs.nsp
 
 saltysd_proc/saltysd_proc.nsp: saltysd_proc/data/saltysd_bootstrap.elf
 	@cd saltysd_proc && make
@@ -20,7 +17,7 @@ saltysd_proc/saltysd_proc.nsp: saltysd_proc/data/saltysd_bootstrap.elf
 saltysd_bootstrap/saltysd_bootstrap.elf:
 	@cd saltysd_bootstrap && make
 
-saltysd_core/saltysd_core.elf: libnx_min/nx/lib/libnx_min.a
+saltysd_core/saltysd_core.elf:
 	@cd saltysd_core && make
 
 saltysd_proc/data/saltysd_bootstrap.elf: saltysd_bootstrap/saltysd_bootstrap.elf
@@ -45,7 +42,6 @@ sdcard_out/atmosphere/contents/0000000000534C56/exefs.nsp: saltysd_proc/saltysd_
 clean:
 	@rm -f saltysd_proc/data/*
 	@rm -r -f sdcard_out
-	@cd libnx_min && make clean
 	@cd saltysd_core && make clean
 	@cd saltysd_bootstrap && make clean
 	@cd saltysd_proc && make clean

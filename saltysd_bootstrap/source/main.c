@@ -1,8 +1,9 @@
-#include <switch_min.h>
+#include <switch.h>
 
 #include <string.h>
 #include <stdio.h>
 #include "printf.h"
+#include "ipc.h"
 
 #define write_log(...) \
 	{char log_buf[0x200]; snprintf_(log_buf, 0x200, __VA_ARGS__); \
