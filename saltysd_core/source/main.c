@@ -1,9 +1,9 @@
-#include <switch.h>
+#include <switch_min.h>
 
 #include <inttypes.h>
 #include <dirent.h>
-#include "ipc.h"
-#include "threadvars.h"
+#include <switch_min/kernel/ipc.h>
+#include <switch_min/runtime/threadvars.h>
 #include <stdlib.h>
 
 #include "useful.h"
@@ -24,13 +24,11 @@ void* __stack_tmp;
 Handle orig_main_thread;
 void* orig_ctx;
 
+Handle sdcard;
 size_t elf_area_size = 0x80000;
 
 ThreadVars vars_orig;
 ThreadVars vars_mine;
-
-Handle sdcard;
-u16 pointer_buffer_size = 0;
 
 uint64_t tid = 0;
 
@@ -58,8 +56,6 @@ void __libnx_init(void* ctx, Handle main_thread, void* saved_lr)
 void __attribute__((weak)) __libnx_exit(int rc)
 {
 	fsdevUnmountAll();
-	fsExit();
-	smExit();
 	
 	// Restore TLS stuff
 	*getThreadVars() = vars_orig;
@@ -435,6 +431,8 @@ int main(int argc, char *argv[])
 
 	debug_log("SaltySD Core: waddup\n");
 	SaltySDCore_RegisterExistingModules();
+	
+	SaltySD_Init();
 
 	SaltySDCore_printf("SaltySD Core: restoring code...\n");
 	ret = SaltySD_Restore();

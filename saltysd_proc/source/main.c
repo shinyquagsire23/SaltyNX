@@ -1,11 +1,11 @@
-#include <switch.h>
+#include <switch_min.h>
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include "svc_extra.h"
-#include "ipc.h"
+#include <switch_min/kernel/svc_extra.h>
+#include <switch_min/kernel/ipc.h>
 #include "saltysd_bootstrap_elf.h"
 
 #include "spawner_ipc.h"
@@ -19,9 +19,8 @@ u32 __nx_applet_type = AppletType_None;
 
 void serviceThread(void* buf);
 
-Handle saltyport, sdcard, injectserv, sdcard_session;
-u16 pointer_buffer_size = 0;
-static char g_heap[0x100000];
+Handle saltyport, sdcard, injectserv;
+static char g_heap[0xB0000];
 bool should_terminate = false;
 bool already_hijacking = false;
 DebugEventInfo eventinfo;
@@ -39,9 +38,7 @@ void __libnx_initheap(void)
 
 void __appInit(void)
 {
-	svcSleepThread(1*1000*1000*1000);
-	smInitialize();
-	fsInitialize();
+	
 }
 
 void __appExit(void)
@@ -118,7 +115,7 @@ void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
 void hijack_pid(u64 pid)
 {
 	Result ret;
-	s32 threads;
+	u32 threads;
 	Handle debug;
 	
 	FILE* disabled = fopen("sdmc:/SaltySD/flags/disable.flag", "r");
@@ -532,7 +529,7 @@ void serviceThread(void* buf)
 			Handle replySession = 0;
 			while (1)
 			{
-				ret = svcReplyAndReceive(&handle_index, &session, 1, replySession, UINT64_MAX);
+				ret = svcReplyAndReceive(&handle_index, &session, 1, replySession, U64_MAX);
 				
 				if (should_terminate) break;
 				
@@ -567,13 +564,94 @@ void serviceThread(void* buf)
 	//SaltySD_printf("SaltySD: done accepting service calls\n");
 }
 
+Result fsp_init(Service fsp)
+{
+	Result rc;
+	IpcCommand c;
+	ipcInitialize(&c);
+	ipcSendPid(&c);
+
+	struct {
+		u64 magic;
+		u64 cmd_id;
+		u64 unk;
+	} *raw;
+
+	raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+	raw->magic = SFCI_MAGIC;
+	raw->cmd_id = 1;
+	raw->unk = 0;
+
+	rc = serviceIpcDispatch(&fsp);
+
+	if (R_SUCCEEDED(rc)) {
+		IpcParsedCommand r;
+		ipcParse(&r);
+
+		struct {
+			u64 magic;
+			u64 result;
+		} *resp = r.Raw;
+
+		rc = resp->result;
+	}
+	
+	return rc;
+}
+
+Result fsp_getSdCard(Service fsp, Handle* out)
+{
+	Result rc;
+	IpcCommand c;
+	ipcInitialize(&c);
+
+	struct {
+		u64 magic;
+		u64 cmd_id;
+	} *raw;
+
+	raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+	raw->magic = SFCI_MAGIC;
+	raw->cmd_id = 18;
+
+	rc = serviceIpcDispatch(&fsp);
+
+	if (R_SUCCEEDED(rc)) {
+		IpcParsedCommand r;
+		ipcParse(&r);
+
+		struct {
+			u64 magic;
+			u64 result;
+		} *resp = r.Raw;
+
+		*out = r.Handles[0];
+
+		rc = resp->result;
+	}
+	
+	return rc;
+}
+
 int main(int argc, char *argv[])
 {
-	fsdevMountSdmc();
-	FsFileSystem* sdcardfs = fsdevGetDeviceFileSystem("sdmc");
-	sdcard_session = sdcardfs->s.session;
+	
+	svcSleepThread(1*1000*1000*1000);
+	smInitialize();
+
+	Service toget;
+	smGetService(&toget, "fsp-srv");
+	fsp_init(toget);
+	fsp_getSdCard(toget, &sdcard);
+	SaltySD_printf("SaltySD: got SD card dev.\n");
+	smExit();
+	smInitialize();
+	FsFileSystem sdcardfs;
+	sdcardfs.s.handle = sdcard;
+	fsdevMountDevice("sdmc", sdcardfs);
 	SaltySD_printf("SaltySD: got SD card.\n");
-	SaltySD_printf("Handle: %x, Session: %x, buffer_size: %x\n", sdcard, sdcard_session, pointer_buffer_size);
 
 	// Start our port
 	// For some reason, we only have one session maximum (0 reslimit handle related?)	
@@ -585,7 +663,7 @@ int main(int argc, char *argv[])
 	u64 max = 0;
 	while (1)
 	{
-		s32 num;
+		u32 num;
 		svcGetProcessList(&num, pids, 0x200);
 
 		u64 old_max = max;

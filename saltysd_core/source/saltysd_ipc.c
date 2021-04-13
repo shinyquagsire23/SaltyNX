@@ -1,13 +1,39 @@
 #include "saltysd_ipc.h"
 
-#include <switch.h>
+#include <switch_min.h>
 #include <stdarg.h>
-#include "ipc.h"
 
 #include "saltysd_core.h"
 #include "useful.h"
 
 Handle saltysd;
+
+void SaltySD_Init()
+{
+	Result ret;
+
+	for (int i = 0; i < 200; i++)
+	{
+		ret = svcConnectToNamedPort(&saltysd, "SaltySD");
+		svcSleepThread(1000*1000);
+		
+		if (!ret) break;
+	}
+	
+	//debug_log("SaltySD Core: Got handle %x\n", saltysd);
+}
+
+Result SaltySD_Deinit()
+{
+	Result ret;
+
+	//debug_log("SaltySD Core: terminating\n");
+	ret = SaltySD_Term();
+	if (ret) return ret;
+
+	svcCloseHandle(saltysd);
+	return ret;
+}
 
 Result SaltySD_Term()
 {
@@ -262,12 +288,9 @@ Result SaltySD_GetSDCard(Handle *retrieve)
 			
 			// Init fs stuff
 			FsFileSystem sdcardfs;
-			sdcardfs.s.session = *retrieve;
-			sdcardfs.s.own_handle = 0;
-			sdcardfs.s.pointer_buffer_size = 0x800;
+			sdcardfs.s.handle = *retrieve;
 			int dev = fsdevMountDevice("sdmc", sdcardfs);
 			setDefaultDevice(dev);
-			SaltySDCore_printf("Confirmation");
 		}
 	}
 	

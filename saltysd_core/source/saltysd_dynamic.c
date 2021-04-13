@@ -1,6 +1,6 @@
 #include <elf.h>
 
-#include <switch.h>
+#include <switch_min.h>
 #include <stdlib.h>
 #include "saltysd_ipc.h"
 
