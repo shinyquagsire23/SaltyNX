@@ -1,7 +1,5 @@
 # SaltyNX
 
-# Because of changes in Atmosphere 0.19.0+ to match new IPC introduced in FW 12.0.0 SaltyNX is no longer working!!!
-
 Background process for the Nintendo Switch for file/code modification
 
 Created by: https://github.com/shinyquagsire23
@@ -19,7 +17,7 @@ For additional functions you need SaltyNX-Tool
 
 https://github.com/masagrator/SaltyNX-Tool
 
-Tests were done on FW 7.0.1-11.0.1, Atmosphere 0.9.1-0.9.4, 0.10.1-0.10.4, 0.11.1-0.13.0, 0.14.4-0.17.1, Mariko and Erista
+Tests were done on FW 7.0.1-12.0.0, Atmosphere 0.9.1-0.9.4, 0.10.1-0.10.4, 0.11.1-0.13.0, 0.14.4-0.17.1, 0.18.1, 0.19.1 / Mariko and Erista
 
 SX OS older than 2.9 are not working. Tested only on sysNAND 9.0.0, 2.9.2
 
