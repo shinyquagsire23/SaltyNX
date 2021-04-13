@@ -5,6 +5,7 @@
 #include "kernel/ipc.h"
 #include "services/fatal.h"
 #include "services/sm.h"
+#include <string.h>
 
 static Service g_smSrv;
 static u64 g_refCnt;
@@ -48,6 +49,19 @@ bool smHasInitialized(void) {
     return serviceIsActive(&g_smSrv);
 }
 
+static const u8 InitializeClientHeader[] = {
+    0x04, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x00, 0x80, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x53, 0x46, 0x43, 0x49, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+static const u8 GetServiceHandleHeader[] = {
+    0x04, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x53, 0x46, 0x43, 0x49, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
 Result smInitialize(void)
 {
     atomicIncrement64(&g_refCnt);
@@ -68,22 +82,7 @@ Result smInitialize(void)
 
     Handle tmp;
     if (R_SUCCEEDED(rc) && smGetServiceOriginal(&tmp, smEncodeName("")) == 0x415) {
-        IpcCommand c;
-        ipcInitialize(&c);
-        ipcSendPid(&c);
-
-        struct {
-            u64 magic;
-            u64 cmd_id;
-            u64 zero;
-            u64 reserved[2];
-        } *raw;
-
-        raw = serviceIpcPrepareHeader(&g_smSrv, &c, sizeof(*raw));
-
-        raw->magic = SFCI_MAGIC;
-        raw->cmd_id = 0;
-        raw->zero = 0;
+        memcpy(armGetTls(), InitializeClientHeader, sizeof(InitializeClientHeader));
 
         rc = serviceIpcDispatch(&g_smSrv);
 
@@ -164,21 +163,8 @@ Result smGetService(Service* service_out, const char* name)
 
 Result smGetServiceOriginal(Handle* handle_out, u64 name)
 {
-    IpcCommand c;
-    ipcInitialize(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u64 service_name;
-        u64 reserved[2];
-    } *raw;
-
-    raw = serviceIpcPrepareHeader(&g_smSrv, &c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 1;
-    raw->service_name = name;
+    memcpy(armGetTls(), GetServiceHandleHeader, sizeof(GetServiceHandleHeader));
+    memcpy((u8 *)armGetTls() + 0x20, &name, sizeof(name));
 
     Result rc = serviceIpcDispatch(&g_smSrv);
 
@@ -197,83 +183,6 @@ Result smGetServiceOriginal(Handle* handle_out, u64 name)
         if (R_SUCCEEDED(rc)) {
             *handle_out = r.Handles[0];
         }
-    }
-
-    return rc;
-}
-
-Result smRegisterService(Handle* handle_out, const char* name, bool is_light, int max_sessions) {
-    IpcCommand c;
-    ipcInitialize(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u64 service_name;
-        u32 is_light;
-        u32 max_sessions;
-    } *raw;
-
-    raw = serviceIpcPrepareHeader(&g_smSrv, &c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 2;
-    raw->service_name = smEncodeName(name);
-    raw->is_light = !!is_light;
-    raw->max_sessions = max_sessions;
-
-    Result rc = serviceIpcDispatch(&g_smSrv);
-
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp;
-        serviceIpcParse(&g_smSrv, &r, sizeof(*resp));
-
-        resp = r.Raw;
-        rc = resp->result;
-
-        if (R_SUCCEEDED(rc)) {
-            *handle_out = r.Handles[0];
-        }
-    }
-
-    return rc;
-}
-
-Result smUnregisterService(const char* name) {
-    IpcCommand c;
-    ipcInitialize(&c);
-
-    struct {
-        u64 magic;
-        u64 cmd_id;
-        u64 service_name;
-        u64 reserved;
-    } *raw;
-
-    raw = serviceIpcPrepareHeader(&g_smSrv, &c, sizeof(*raw));
-
-    raw->magic = SFCI_MAGIC;
-    raw->cmd_id = 3;
-    raw->service_name = smEncodeName(name);
-
-    Result rc = serviceIpcDispatch(&g_smSrv);
-
-    if (R_SUCCEEDED(rc)) {
-        IpcParsedCommand r;
-
-        struct {
-            u64 magic;
-            u64 result;
-        } *resp;
-        serviceIpcParse(&g_smSrv, &r, sizeof(*resp));
-
-        resp = r.Raw;
-        rc = resp->result;
     }
 
     return rc;
