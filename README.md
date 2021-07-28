@@ -45,7 +45,7 @@ Remember to restart Switch
 
 ---
 
-List of titles not compatible with plugins/patches:
+# List of titles not compatible with plugins/patches
 
 | Title | plugins/all | Why? |
 | ------------- | ------------- | ------------- |
