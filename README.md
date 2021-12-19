@@ -6,8 +6,7 @@ Created by: https://github.com/shinyquagsire23
 
 This fork includes many QoL improvements and beside plugins support also supports patches.
 
-https://img.shields.io/github/downloads/masagrator/SaltyNX/total?style=for-the-badge
-
+![GitHub all releases](https://img.shields.io/github/downloads/masagrator/SaltyNX/total?style=for-the-badge)
 ---
 
 Patches pattern:
