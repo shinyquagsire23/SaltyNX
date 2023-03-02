@@ -7,8 +7,10 @@
 #include <stdarg.h>
 
 #define LINKABLE __attribute__ ((weak))
+
+extern void SaltySDCore_printf(const char* format, ...) LINKABLE;
 	
-static inline void SaltySDCore_printf(const char* format, ...)
+void SaltySDCore_printf(const char* format, ...)
 {
 	FILE* logflag = fopen("sdmc:/SaltySD/flags/log.flag", "r");
 	if (logflag == NULL) return;
