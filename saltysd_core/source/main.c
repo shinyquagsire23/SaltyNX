@@ -291,9 +291,6 @@ Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 	
 	//SaltySDCore_printf("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+((elf_area_size+0x200000) & 0xffe00000));
 	
-	if (ret)
-		ret = svcSetHeapSize((void*)out, size-0x200000);
-	
 	if (!ret && !Initialized)
 	{
 		*out += ((elf_area_size+0x200000) & 0xffe00000);
