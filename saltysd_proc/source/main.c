@@ -515,6 +515,49 @@ Result handleServiceCmd(int cmd)
 
 		ipcSendHandleCopy(&c, _sharedMemory.handle);
 	}
+	else if (cmd == 8) { // Get BID
+		SaltySD_printf("SaltySD: cmd 8 handler\n");
+
+		IpcParsedCommand r = {0};
+		ipcParse(&r);
+
+		struct {
+			u64 magic;
+			u64 result;
+			u8 BID[0x20];
+		} *raw;
+
+		raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+		u64 PID = 0;
+		Result rc = pmdmntGetApplicationPid(&PID);
+		raw->magic = SFCO_MAGIC;
+
+		if (R_SUCCEEDED(rc)) {
+			ldrDmntInitialize();
+			LoaderModuleInfo* module_infos = (LoaderModuleInfo*)malloc(sizeof(LoaderModuleInfo) * 16);
+			u32 module_infos_count = 0;
+			ldrDmntGetModuleInfos(PID, module_infos, 10, &module_infos_count);
+			ldrDmntExit();
+			rc = 1;
+			for (int itr = 0; itr < module_infos_count; itr++) {
+				static u64 comp_address = 0;
+				if (!comp_address) {
+					comp_address = module_infos[itr].base_address;
+					continue;
+				}
+				if (module_infos[itr].base_address - comp_address == 0x4000) {
+					memcpy(&(raw->BID[0]), &module_infos[itr].build_id[0], 0x20);
+					rc = 0;
+					break;
+				}
+			}
+			free(module_infos);
+		}
+		raw->result = rc;
+
+		return 0;
+	}
 	else if (cmd == 9) // Exception
 	{
 		IpcParsedCommand r = {0};
@@ -706,6 +749,8 @@ int main(int argc, char *argv[])
 
 	shmemCreate(&_sharedMemory, 0x1000, Perm_Rw, Perm_Rw);
 
+	pmdmntInitialize();
+
 	// Main service loop
 	u64* pids = malloc(0x200 * sizeof(u64));
 	u64 max = 0;
@@ -746,6 +791,7 @@ int main(int argc, char *argv[])
 	
 	fsdevUnmountAll();
 	fsExit();
+	pmdmntExit();
 	smExit();
 
 	return 0;
