@@ -456,4 +456,44 @@ Result SaltySD_printf(const char* format, ...)
 	return ret;
 }
 
+Result SaltySD_GetBID(u8* BID)
+{
+	Result ret;
+	IpcCommand c;
 
+	ipcInitialize(&c);
+	ipcSendPid(&c);
+
+	struct 
+	{
+		u64 magic;
+		u64 cmd_id;
+		u8 reserved[0x20];
+	} *raw;
+
+	raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+	raw->magic = SFCI_MAGIC;
+	raw->cmd_id = 8;
+
+	ret = ipcDispatch(saltysd);
+
+	if (R_SUCCEEDED(ret)) 
+	{
+		IpcParsedCommand r;
+		ipcParse(&r);
+
+		struct {
+			u64 magic;
+			u64 result;
+			u8 BID[0x20];
+		} *resp = r.Raw;
+
+		ret = resp->result;
+		if R_SUCCEEDED(ret) {
+			memcpy(BID, resp->BID, 0x20);
+		}
+	}
+
+	return ret;
+}
