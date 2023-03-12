@@ -52,6 +52,7 @@ void __appExit(void)
 }
 
 u64 TIDnow;
+u64 PIDnow;
 
 void renametocheatstemp() {
 	char cheatspath[60];
@@ -194,6 +195,11 @@ void hijack_pid(u64 pid)
 			if (!eventinfo.isA64)
 			{
 				SaltySD_printf("SaltySD: ARM32 applications plugins are not supported, aborting bootstrap...\n");
+				if (!shmemMap(&_sharedMemory)) {
+					memset(shmemGetAddr(&_sharedMemory), 0, 0x1000);
+					shmemUnmap(&_sharedMemory);
+				}
+
 				goto abort_bootstrap;
 			}
 			char* hbloader = "hbloader";
@@ -212,11 +218,19 @@ void hijack_pid(u64 pid)
 					snprintf(exceptions, sizeof exceptions, "%s", line); 
 					if (!strncasecmp(exceptions, titleidnumF, 17)) {
 						SaltySD_printf("SaltySD: TID %016llx is forced in exceptions.txt, aborting bootstrap...\n", eventinfo.tid);
+						if (!shmemMap(&_sharedMemory)) {
+							memset(shmemGetAddr(&_sharedMemory), 0, 0x1000);
+							shmemUnmap(&_sharedMemory);
+						}
 						fclose(except);
 						goto abort_bootstrap;
 					}
 					else if (!strncasecmp(exceptions, titleidnum, 16)) {
 						SaltySD_printf("SaltySD: TID %016llx is in exceptions.txt, aborting loading plugins...\n", eventinfo.tid);
+						if (!shmemMap(&_sharedMemory)) {
+							memset(shmemGetAddr(&_sharedMemory), 0, 0x1000);
+							shmemUnmap(&_sharedMemory);
+						}
 						exception = 0x1;
 					}
 				}
@@ -515,6 +529,56 @@ Result handleServiceCmd(int cmd)
 
 		ipcSendHandleCopy(&c, _sharedMemory.handle);
 	}
+	else if (cmd == 8) { // Get BID
+
+		IpcParsedCommand r = {0};
+		ipcParse(&r);
+
+		SaltySD_printf("SaltySD: cmd 8 handler\n");
+
+		u64 BID = 0;
+
+		ret = ldrDmntInitialize();
+		LoaderModuleInfo* module_infos = (LoaderModuleInfo*)malloc(sizeof(LoaderModuleInfo) * 16);
+		u32 module_infos_count = 0;
+		if (R_SUCCEEDED(ret)) {
+			ret = ldrDmntGetModuleInfos(PIDnow, module_infos, 16, &module_infos_count);
+			ldrDmntExit();
+		}
+		if (R_SUCCEEDED(ret)) for (int itr = 0; itr < module_infos_count; itr++) {
+			static u64 comp_address = 0;
+			ret = 0xFFDE;
+			if (!comp_address) {
+				comp_address = module_infos[itr].base_address;
+				continue;
+			}
+			if (module_infos[itr].base_address - comp_address == 0x4000) {
+				for (int itr2 = 0; itr2 < 8; itr2++) {
+					*(uint8_t*)((uint64_t)&BID+itr2) = module_infos[itr].build_id[itr2];
+				}
+				BID = __builtin_bswap64(BID);
+				SaltySD_printf("SaltySD: cmd 8 Main found. BID: %016lX\n", BID);
+				ret = 0;
+				itr = module_infos_count;
+			}
+			else comp_address = module_infos[itr].base_address;
+		}
+		free(module_infos);
+
+		struct {
+			u64 magic;
+			u64 result;
+		} *raw;
+
+		raw = ipcPrepareHeader(&c, sizeof(*raw));
+		raw->magic = SFCO_MAGIC;
+		if (!ret) {
+			raw->result = BID;
+		}
+		else raw->result = 0;
+
+		return 0;
+	}
 	else if (cmd == 9) // Exception
 	{
 		IpcParsedCommand r = {0};
@@ -726,6 +790,7 @@ int main(int argc, char *argv[])
 		// Detected new PID
 		if (max != old_max && max > 0x80)
 		{
+			PIDnow = max;
 			hijack_pid(max);
 		}
 		

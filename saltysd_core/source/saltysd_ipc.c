@@ -456,4 +456,47 @@ Result SaltySD_printf(const char* format, ...)
 	return ret;
 }
 
+u64 SaltySD_GetBID()
+{
+	Result ret;
+	IpcCommand c;
 
+	ipcInitialize(&c);
+	ipcSendPid(&c);
+
+	struct 
+	{
+		u64 magic;
+		u64 cmd_id;
+		u64 reserved;
+	} *raw;
+
+	raw = ipcPrepareHeader(&c, sizeof(*raw));
+
+	raw->magic = SFCI_MAGIC;
+	raw->cmd_id = 8;
+
+	ret = ipcDispatch(saltysd);
+
+	if (R_SUCCEEDED(ret)) 
+	{
+		IpcParsedCommand r;
+		ipcParse(&r);
+
+		struct {
+			u64 magic;
+			u64 result;
+		} *resp = r.Raw;
+
+		uint64_t rett = resp->result;
+		if (rett) {
+			SaltySDCore_printf("SaltySD Core: BID: %016lX\n", rett);
+			return rett;
+		}
+		else {
+			SaltySDCore_printf("SaltySD Core: getBID failed!\n");
+			return 0;
+		}
+	}
+	return 0;
+}
