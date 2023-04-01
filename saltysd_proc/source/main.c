@@ -545,23 +545,25 @@ Result handleServiceCmd(int cmd)
 			ret = ldrDmntGetModuleInfos(PIDnow, module_infos, 16, &module_infos_count);
 			ldrDmntExit();
 		}
-		if (R_SUCCEEDED(ret)) for (int itr = 0; itr < module_infos_count; itr++) {
-			static u64 comp_address = 0;
-			ret = 0xFFDE;
-			if (!comp_address) {
-				comp_address = module_infos[itr].base_address;
-				continue;
-			}
-			if (module_infos[itr].base_address - comp_address == 0x4000) {
-				for (int itr2 = 0; itr2 < 8; itr2++) {
-					*(uint8_t*)((uint64_t)&BID+itr2) = module_infos[itr].build_id[itr2];
+		if (R_SUCCEEDED(ret)) {
+			for (int itr = 0; itr < module_infos_count; itr++) {
+				static u64 comp_address = 0;
+				ret = 0xFFDE;
+				if (!comp_address) {
+					comp_address = module_infos[itr].base_address;
+					continue;
 				}
-				BID = __builtin_bswap64(BID);
-				SaltySD_printf("SaltySD: cmd 8 Main found. BID: %016lX\n", BID);
-				ret = 0;
-				itr = module_infos_count;
+				if ((module_infos[itr].base_address - comp_address == 0x4000) || (module_infos[itr].base_address - comp_address == 0x6000)) {
+					for (int itr2 = 0; itr2 < 8; itr2++) {
+						*(uint8_t*)((uint64_t)&BID+itr2) = module_infos[itr].build_id[itr2];
+					}
+					BID = __builtin_bswap64(BID);
+					SaltySD_printf("SaltySD: cmd 8 Main found. BID: %016lX\n", BID);
+					ret = 0;
+					itr = module_infos_count;
+				}
+				else comp_address = module_infos[itr].base_address;
 			}
-			else comp_address = module_infos[itr].base_address;
 		}
 		free(module_infos);
 
