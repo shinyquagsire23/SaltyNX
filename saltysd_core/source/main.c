@@ -1,6 +1,5 @@
 #include <switch_min.h>
 
-#include <inttypes.h>
 #include <dirent.h>
 #include <switch_min/kernel/ipc.h>
 #include <switch_min/runtime/threadvars.h>
@@ -15,7 +14,7 @@
 
 u32 __nx_applet_type = AppletType_None;
 
-static char g_heap[0x10000];
+static char g_heap[0x20000];
 
 extern void __nx_exit_clear(void* ctx, Handle thread, void* addr);
 extern void elf_trampoline(void* context, Handle thread, void* func);
@@ -25,7 +24,7 @@ Handle orig_main_thread;
 void* orig_ctx;
 
 Handle sdcard;
-size_t elf_area_size = 0;
+size_t elf_area_size = 0x80000;
 
 ThreadVars vars_orig;
 ThreadVars vars_mine;
@@ -147,7 +146,7 @@ void SaltySDCore_LoadPatches (bool Aarch64) {
 	
 	SaltySDCore_printf("SaltySD Patcher: Searching patches in dir '/%016llx'...\n", tid);
 	
-	snprintf(tmp4, 0x100, "sdmc:/SaltySD/patches/%016" PRIx64 "/", tid);
+	snprintf(tmp4, 0x100, "sdmc:/SaltySD/patches/%016lx/", tid);
 
 	d = opendir(tmp4);
 	if (d)
@@ -283,18 +282,13 @@ void SaltySDCore_RegisterExistingModules()
 
 Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 {
-	static bool Initialized = false;
-	Result ret = 1;
-	if (!Initialized)
-		size += ((elf_area_size+0x200000) & 0xffe00000);
-	ret = svcSetHeapSize((void*)out, size);
+	Result ret = svcSetHeapSize((void*)out, size+((elf_area_size+0x200000) & 0xffe00000));
 	
 	//SaltySDCore_printf("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+((elf_area_size+0x200000) & 0xffe00000));
 	
-	if (!ret && !Initialized)
+	if (!ret)
 	{
 		*out += ((elf_area_size+0x200000) & 0xffe00000);
-		Initialized = true;
 	}
 	
 	return ret;
@@ -415,7 +409,7 @@ void SaltySDCore_LoadPlugins()
 	size_t num_elfs = 0;
 	
 	entries = SaltySDCore_LoadPluginsInDir("", entries, &num_elfs);
-	snprintf(tmp3, 0x20, "%016" PRIx64 "/", tid);
+	snprintf(tmp3, 0x20, "%016lx/", tid);
 	entries = SaltySDCore_LoadPluginsInDir(tmp3, entries, &num_elfs);
 	
 	for (int i = 0; i < num_elfs; i++)
