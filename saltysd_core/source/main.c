@@ -14,7 +14,7 @@
 
 u32 __nx_applet_type = AppletType_None;
 
-static char g_heap[0x20000];
+static char g_heap[0x10000];
 
 extern void __nx_exit_clear(void* ctx, Handle thread, void* addr);
 extern void elf_trampoline(void* context, Handle thread, void* func);
@@ -24,7 +24,7 @@ Handle orig_main_thread;
 void* orig_ctx;
 
 Handle sdcard;
-size_t elf_area_size = 0x80000;
+size_t elf_area_size = 0;
 
 ThreadVars vars_orig;
 ThreadVars vars_mine;
@@ -282,13 +282,18 @@ void SaltySDCore_RegisterExistingModules()
 
 Result svcSetHeapSizeIntercept(u64 *out, u64 size)
 {
-	Result ret = svcSetHeapSize((void*)out, size+((elf_area_size+0x200000) & 0xffe00000));
+	static bool Initialized = false;
+	Result ret = 1;
+	if (!Initialized)
+		size += ((elf_area_size+0x200000) & 0xffe00000);
+	ret = svcSetHeapSize((void*)out, size);
 	
 	//SaltySDCore_printf("SaltySD Core: svcSetHeapSize intercept %x %llx %llx\n", ret, *out, size+((elf_area_size+0x200000) & 0xffe00000));
 	
-	if (!ret)
+	if (!ret && !Initialized)
 	{
 		*out += ((elf_area_size+0x200000) & 0xffe00000);
+		Initialized = true;
 	}
 	
 	return ret;
