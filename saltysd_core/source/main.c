@@ -1,6 +1,5 @@
 #include <switch_min.h>
 
-#include <inttypes.h>
 #include <dirent.h>
 #include <switch_min/kernel/ipc.h>
 #include <switch_min/runtime/threadvars.h>
@@ -147,7 +146,7 @@ void SaltySDCore_LoadPatches (bool Aarch64) {
 	
 	SaltySDCore_printf("SaltySD Patcher: Searching patches in dir '/%016llx'...\n", tid);
 	
-	snprintf(tmp4, 0x100, "sdmc:/SaltySD/patches/%016" PRIx64 "/", tid);
+	snprintf(tmp4, 0x100, "sdmc:/SaltySD/patches/%016lx/", tid);
 
 	d = opendir(tmp4);
 	if (d)
@@ -415,7 +414,7 @@ void SaltySDCore_LoadPlugins()
 	size_t num_elfs = 0;
 	
 	entries = SaltySDCore_LoadPluginsInDir("", entries, &num_elfs);
-	snprintf(tmp3, 0x20, "%016" PRIx64 "/", tid);
+	snprintf(tmp3, 0x20, "%016lx/", tid);
 	entries = SaltySDCore_LoadPluginsInDir(tmp3, entries, &num_elfs);
 	
 	for (int i = 0; i < num_elfs; i++)

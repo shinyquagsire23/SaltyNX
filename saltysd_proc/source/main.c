@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <inttypes.h>
+#include <dirent.h>
 #include <switch_min/kernel/svc_extra.h>
 #include <switch_min/kernel/ipc.h>
 #include "saltysd_bootstrap_elf.h"
@@ -20,7 +20,7 @@ u32 __nx_applet_type = AppletType_None;
 void serviceThread(void* buf);
 
 Handle saltyport, sdcard, injectserv;
-static char g_heap[0xB0000];
+static char g_heap[0x80000];
 bool should_terminate = false;
 bool already_hijacking = false;
 DebugEventInfo eventinfo;
@@ -54,31 +54,40 @@ void __appExit(void)
 u64 TIDnow;
 u64 PIDnow;
 
-void renametocheatstemp() {
-	char cheatspath[60];
-	char cheatspathtemp[64];
-	TIDnow = eventinfo.tid;
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%016"PRIx64"/cheats", TIDnow);
-	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
-	rename(cheatspath, cheatspathtemp);
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%016"PRIx64"/cheats", TIDnow);
-	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
-	rename(cheatspath, cheatspathtemp);
-	check = true;
+void renameCheatsFolder() {
+	char* cheatspath = (char*)malloc(0x40);
+	char* cheatspathtemp = (char*)malloc(0x40);
+
+	snprintf(cheatspath, 0x40, "sdmc:/atmosphere/contents/%016lx/cheats", TIDnow);
+	snprintf(cheatspathtemp, 0x40, "%stemp", cheatspath);
+	if (!check) {
+		rename(cheatspath, cheatspathtemp);
+		check = true;
+	}
+	else {
+		rename(cheatspathtemp, cheatspath);
+		check = false;
+	}
+	free(cheatspath);
+	free(cheatspathtemp);
 	return;
 }
 
-void renametocheats() {
-	char cheatspath[60];
-	char cheatspathtemp[64];
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/titles/%016"PRIx64"/cheats", TIDnow);
-	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
-	rename(cheatspathtemp, cheatspath);
-	snprintf(cheatspath, sizeof cheatspath, "sdmc:/Atmosphere/contents/%016"PRIx64"/cheats", TIDnow);
-	snprintf(cheatspathtemp, sizeof cheatspathtemp, "%stemp", cheatspath);
-	rename(cheatspathtemp, cheatspath);
-	check = false;
-	return;
+bool isModInstalled() {
+	char* romfspath = (char*)malloc(0x40);
+	bool flag = false;
+
+	snprintf(romfspath, 0x40, "sdmc:/atmosphere/contents/%016lx/romfs", eventinfo.tid);
+
+	DIR* dir = opendir(romfspath);
+	if (dir) {
+		if (readdir(dir))
+			flag = true;
+		closedir(dir);
+	}
+
+	free(romfspath);
+	return flag;
 }
 
 void hijack_bootstrap(Handle* debug, u64 pid, u64 tid)
@@ -157,15 +166,19 @@ void hijack_pid(u64 pid)
 	char exceptions[20];
 	char line[20];
 	char titleidnum[20];
-	char titleidnumF[20];
+	char titleidnumX[20];
+	char titleidnumR[20];
 
 	while (1)
 	{
 		ret = svcGetDebugEventInfo(&eventinfo, debug);
+
 		if (check == false) {
+			TIDnow = eventinfo.tid;
 			exception = 0;
-			renametocheatstemp();
+			renameCheatsFolder();
 		}
+
 		if (ret)
 		{
 			SaltySD_printf("SaltySD: svcGetDebugEventInfo returned %x, breaking\n", ret);
@@ -184,12 +197,12 @@ void hijack_pid(u64 pid)
 
 			if (eventinfo.tid <= 0x010000000000FFFF)
 			{
-				SaltySD_printf("SaltySD: TID %016llx is a system application, aborting bootstrap...\n", eventinfo.tid);
+				SaltySD_printf("SaltySD: TID %016lx is a system application, aborting bootstrap...\n", eventinfo.tid);
 				goto abort_bootstrap;
 			}
 			if (eventinfo.tid > 0x01FFFFFFFFFFFFFF || (eventinfo.tid & 0x1F00) != 0)
 			{
-				SaltySD_printf("SaltySD: TID %016llx is a homebrew application, aborting bootstrap...\n", eventinfo.tid);
+				SaltySD_printf("SaltySD: TID %016lx is a homebrew application, aborting bootstrap...\n", eventinfo.tid);
 				goto abort_bootstrap;
 			}
 			if (!eventinfo.isA64)
@@ -209,15 +222,15 @@ void hijack_pid(u64 pid)
 				goto abort_bootstrap;
 			}
 			
-			snprintf(titleidnum, sizeof titleidnum, "%016"PRIx64, eventinfo.tid);
-			snprintf(titleidnumF, sizeof titleidnumF, "X%016"PRIx64, eventinfo.tid);
-			
 			FILE* except = fopen("sdmc:/SaltySD/exceptions.txt", "r");
 			if (except) {
+				snprintf(titleidnum, sizeof titleidnum, "%016lx", eventinfo.tid);
+				snprintf(titleidnumX, sizeof titleidnumX, "X%016lx", eventinfo.tid);
+				snprintf(titleidnumR, sizeof titleidnumR, "R%016lx", eventinfo.tid);
 				while (fgets(line, sizeof(line), except)) {
 					snprintf(exceptions, sizeof exceptions, "%s", line); 
-					if (!strncasecmp(exceptions, titleidnumF, 17)) {
-						SaltySD_printf("SaltySD: TID %016llx is forced in exceptions.txt, aborting bootstrap...\n", eventinfo.tid);
+					if (!strncasecmp(exceptions, titleidnumX, 17)) {
+						SaltySD_printf("SaltySD: TID %016lx is forced in exceptions.txt, aborting bootstrap...\n", eventinfo.tid);
 						if (!shmemMap(&_sharedMemory)) {
 							memset(shmemGetAddr(&_sharedMemory), 0, 0x1000);
 							shmemUnmap(&_sharedMemory);
@@ -225,8 +238,20 @@ void hijack_pid(u64 pid)
 						fclose(except);
 						goto abort_bootstrap;
 					}
+					else if (!strncasecmp(exceptions, titleidnumR, 17)) {
+						if (isModInstalled()) {
+							SaltySD_printf("SaltySD: TID %016lx is in exceptions.txt as romfs excluded, aborting bootstrap...\n", eventinfo.tid);
+							if (!shmemMap(&_sharedMemory)) {
+								memset(shmemGetAddr(&_sharedMemory), 0, 0x1000);
+								shmemUnmap(&_sharedMemory);
+							}
+							fclose(except);
+							goto abort_bootstrap;
+						}
+						else SaltySD_printf("SaltySD: TID %016lx is in exceptions.txt as romfs excluded, but no romfs mod was detected...\n", eventinfo.tid);
+					}
 					else if (!strncasecmp(exceptions, titleidnum, 16)) {
-						SaltySD_printf("SaltySD: TID %016llx is in exceptions.txt, aborting loading plugins...\n", eventinfo.tid);
+						SaltySD_printf("SaltySD: TID %016lx is in exceptions.txt, aborting loading plugins...\n", eventinfo.tid);
 						if (!shmemMap(&_sharedMemory)) {
 							memset(shmemGetAddr(&_sharedMemory), 0, 0x1000);
 							shmemUnmap(&_sharedMemory);
@@ -237,11 +262,11 @@ void hijack_pid(u64 pid)
 				fclose(except);
 			}
 			SaltySD_printf("SaltySD: found valid AttachProcess event:\n");
-			SaltySD_printf("		 tid %016llx pid %016llx\n", eventinfo.tid, eventinfo.pid);
+			SaltySD_printf("		 tid %016lx pid %016lx\n", eventinfo.tid, eventinfo.pid);
 			SaltySD_printf("		 name %s\n", eventinfo.name);
 			SaltySD_printf("		 isA64 %01x addrSpace %01x enableDebug %01x\n", eventinfo.isA64, eventinfo.addrSpace, eventinfo.enableDebug);
 			SaltySD_printf("		 enableAslr %01x useSysMemBlocks %01x poolPartition %01x\n", eventinfo.enableAslr, eventinfo.useSysMemBlocks, eventinfo.poolPartition);
-			SaltySD_printf("		 exception %016llx\n", eventinfo.userExceptionContextAddr);
+			SaltySD_printf("		 exception %016lx\n", eventinfo.userExceptionContextAddr);
 		}
 		else
 		{
@@ -257,7 +282,7 @@ void hijack_pid(u64 pid)
 		svcSleepThread(-1);
 	}
 	while (!threads);
-	renametocheats();
+	renameCheatsFolder();
 	
 	hijack_bootstrap(&debug, pid, tids[0]);
 	
@@ -267,7 +292,7 @@ void hijack_pid(u64 pid)
 abort_bootstrap:
 	disable = 0;
 	free(tids);
-	renametocheats();
+	renameCheatsFolder();
 				
 	already_hijacking = false;
 	svcCloseHandle(debug);
