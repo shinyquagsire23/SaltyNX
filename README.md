@@ -51,6 +51,7 @@ Remember to restart Switch
 | Alien: Isolation | plugins | Heap related |
 | Azure Striker Gunvolt: Striker Pack | all | 32-bit game, not supported |
 | Baldur's Gate and Baldur's Gate II: Enhanced Editions | all | 32-bit game, not supported |
+| CelDamage HD | all | 32-bit game, not supported |
 | DEADLY PREMONITION Origins | all | 32-bit game, not supported |
 | Dies irae Amantes amentes For Nintendo Switch | all | 32-bit game, not supported |
 | Goat Simulator | all | 32-bit game, not supported |
