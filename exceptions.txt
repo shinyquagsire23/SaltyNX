@@ -42,3 +42,7 @@ X0100964012528000
 ;1.0.0 - Games in collection are crashing on boot, only launcher doesn't
 010079C017F5E001
 010079C017F5E002
+
+;Plants vs. Zombies: Battle for Neighborville
+;1.0.3 crash on boot
+0100C56010FD8000
