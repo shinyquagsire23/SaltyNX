@@ -4,7 +4,9 @@ Background process for the Nintendo Switch for file/code modification
 
 Created by: https://github.com/shinyquagsire23
 
-This fork includes many QoL improvements and beside plugins support also supports patches.
+This fork includes many QoL improvements and beside plugins support also supports patches. 
+
+Since 0.7.0 version NX-FPS and ReverseNX-RT is an intergral part of SaltyNX Core. This allows us to run them in 64-bit games not compatible with plugins.
 
 ![GitHub all releases](https://img.shields.io/github/downloads/masagrator/SaltyNX/total?style=for-the-badge)
 ---
@@ -18,7 +20,7 @@ For additional functions you need SaltyNX-Tool
 
 https://github.com/masagrator/SaltyNX-Tool
 
-Tests were done on FW 7.0.1-16.0.0 with Atmosphere up to 1.5.0
+Tests were done on FW 7.0.1-16.1.0 with Atmosphere up to 1.5.5
 
 No technical support for:
 - Atmosphere forks
@@ -54,6 +56,7 @@ Remember to restart Switch
 | CelDamage HD | all | 32-bit game, not supported |
 | DEADLY PREMONITION Origins | all | 32-bit game, not supported |
 | Dies irae Amantes amentes For Nintendo Switch | all | 32-bit game, not supported |
+| EA SPORTS FC 24 | plugins | heap related |
 | Goat Simulator | all | 32-bit game, not supported |
 | Grandia Collection | all | Only launcher is 64-bit, games are 32-bit |
 | Grid: Autosport | plugins | Heap related |
