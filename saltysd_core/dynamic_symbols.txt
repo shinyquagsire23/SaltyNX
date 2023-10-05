@@ -1,0 +1,12 @@
+{
+  extern "C"
+  {
+    SaltySD*;
+	main;
+  };
+  extern "C++"
+  {
+    SaltySD*;
+	main;
+  };
+};

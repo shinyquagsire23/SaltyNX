@@ -39,7 +39,7 @@ EXEFS_SRC	:=	exefs_src
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -fno-plt -export-dynamic -s
+ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -fno-plt
 
 CFLAGS	:=	-Wall -O2 \
 			-ffast-math \
@@ -50,7 +50,7 @@ CFLAGS	+=	$(INCLUDE) -DSWITCH
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++20
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-s,--dynamic-list=$(CURDIR)/../dynamic_symbols.txt -Wl,-Map,$(notdir $*.map)
 
 LIBS	:= -lnx_min
 
