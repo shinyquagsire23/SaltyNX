@@ -52,7 +52,7 @@ CFLAGS	+=	$(INCLUDE) -DSWITCH
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++20
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-T $(TOPDIR)/rel.ld -z text -z nodynamic-undefined-weak --build-id=sha1 -g -nostartfiles -nodefaultlibs --emit-relocs
+LDFLAGS	=	-T $(TOPDIR)/rel.ld -z text -z nodynamic-undefined-weak --build-id=sha1 -g --emit-relocs
 
 LIBS	:= -lnx_min
 
