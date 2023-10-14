@@ -59,6 +59,7 @@ Remember to restart Switch
 | Dies irae Amantes amentes For Nintendo Switch | all | 32-bit game, not supported |
 | EA SPORTS FC 24 | plugins | heap related |
 | Goat Simulator | all | 32-bit game, not supported |
+| Gothic | all | 32-bit game, not supported |
 | Grandia Collection | all | Only launcher is 64-bit, games are 32-bit |
 | Grid: Autosport | plugins | Heap related |
 | Immortals Fenyx Rising | plugins | Heap related |
