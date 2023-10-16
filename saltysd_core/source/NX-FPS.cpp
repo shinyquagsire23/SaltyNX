@@ -15,6 +15,7 @@ extern "C" {
 	typedef u32 (*_ZN11NvSwapchain15QueuePresentKHREP9VkQueue_TPK16VkPresentInfoKHR_0)(const void* VkQueue_T, const void* VkPresentInfoKHR);
 	typedef u64 (*_ZN2nn2os17ConvertToTimeSpanENS0_4TickE_0)(u64 tick);
 	typedef u64 (*_ZN2nn2os13GetSystemTickEv_0)();
+	typedef u64 (*eglGetProcAddress_0)(const char* eglName);
 }
 
 struct {
@@ -25,6 +26,7 @@ struct {
 	uintptr_t nvSwapchainQueuePresentKHR;
 	uintptr_t ConvertToTimeSpan;
 	uintptr_t GetSystemTick;
+	uintptr_t eglGetProcAddress;
 } Address_weaks;
 
 struct nvnWindowBuilder {
@@ -106,6 +108,9 @@ struct {
 	uintptr_t nvnGetProcAddress;
 	uintptr_t nvnWindowSetNumActiveTextures;
 	uintptr_t nvnWindowInitialize;
+	uintptr_t eglGetProcAddress;
+	uintptr_t eglSwapBuffers;
+	uintptr_t eglSwapInterval;
 } Address;
 
 struct {
@@ -454,6 +459,16 @@ int eglSwap (const void* EGLDisplay, const void* EGLSurface) {
 	return result;
 }
 
+uintptr_t eglGetProc(const char* eglName) {
+	if (!strcmp(eglName, "eglSwapInterval")) {
+		return Address.eglSwapInterval;
+	}
+	else if (!strcmp(eglName, "eglSwapBuffers")) {
+		return Address.eglSwapBuffers;
+	}
+	return ((eglGetProcAddress_0)(Address_weaks.eglGetProcAddress))(eglName);
+}
+
 bool nvnWindowInitialize(const void* nvnWindow, struct nvnWindowBuilder* windowBuilder) {
 	if (!*(Shared.Buffers)) {
 		*(Shared.Buffers) = windowBuilder -> numBufferedFrames;
@@ -728,11 +743,13 @@ extern "C" {
 			Address_weaks.nvSwapchainQueuePresentKHR = SaltySDCore_FindSymbolBuiltin("_ZN11NvSwapchain15QueuePresentKHREP9VkQueue_TPK16VkPresentInfoKHR");
 			Address_weaks.ConvertToTimeSpan = SaltySDCore_FindSymbolBuiltin("_ZN2nn2os17ConvertToTimeSpanENS0_4TickE");
 			Address_weaks.GetSystemTick = SaltySDCore_FindSymbolBuiltin("_ZN2nn2os13GetSystemTickEv");
+			Address_weaks.eglGetProcAddress = SaltySDCore_FindSymbolBuiltin("eglGetProcAddress");
 			SaltySDCore_ReplaceImport("nvnBootstrapLoader", (void*)nvnBootstrapLoader_1);
 			SaltySDCore_ReplaceImport("eglSwapBuffers", (void*)eglSwap);
 			SaltySDCore_ReplaceImport("eglSwapInterval", (void*)eglInterval);
 			SaltySDCore_ReplaceImport("vkQueuePresentKHR", (void*)vulkanSwap);
 			SaltySDCore_ReplaceImport("_ZN11NvSwapchain15QueuePresentKHREP9VkQueue_TPK16VkPresentInfoKHR", (void*)vulkanSwap2);
+			SaltySDCore_ReplaceImport("eglGetProcAddress", (void*)eglGetProc);
 
 			Shared.FPSlocked = (uint8_t*)(base + 10);
 			Shared.FPSmode = (uint8_t*)(base + 11);
@@ -748,6 +765,9 @@ extern "C" {
 			Address.nvnSyncWait = (uint64_t)&nvnSyncWait0;
 			Address.nvnWindowBuilderSetTextures = (uint64_t)&nvnWindowBuilderSetTextures;
 			Address.nvnWindowSetNumActiveTextures = (uint64_t)&nvnWindowSetNumActiveTextures;
+			Address.eglGetProcAddress = (uint64_t)&eglGetProc;
+			Address.eglSwapBuffers = (uint64_t)&eglSwap;
+			Address.eglSwapInterval = (uint64_t)&eglInterval;
 
 			char titleid[17];
 			CheckTitleID(&titleid[0]);
