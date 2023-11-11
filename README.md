@@ -55,6 +55,7 @@ Remember to restart Switch
 | Azure Striker Gunvolt: Striker Pack | all | 32-bit game, not supported |
 | Baldur's Gate and Baldur's Gate II: Enhanced Editions | all | 32-bit game, not supported |
 | CelDamage HD | all | 32-bit game, not supported |
+| Company of Heroes Collection | plugins | heap related |
 | DEADLY PREMONITION Origins | all | 32-bit game, not supported |
 | Dies irae Amantes amentes For Nintendo Switch | all | 32-bit game, not supported |
 | EA SPORTS FC 24 | plugins | heap related |
